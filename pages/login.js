@@ -2,10 +2,8 @@ export function showLogin() {
   const app = document.getElementById("app");
 
   app.innerHTML = `
-    <h1>Here is my social media application for my Javascript 2 course assignment</h1>
-    <p>This application allows users to connect, share, and interact with each other.</p>
-    <h2>Login</h2>
-    <form id="loginForm">
+    <h1>Login</h1>
+    <form id="loginForm" class="login-form">
       <input name="email" placeholder="Email" required />
       <input name="password" type="password" placeholder="Password" required />
       <button type="submit">Login</button>
@@ -52,7 +50,7 @@ async function handleLogin(event) {
       messageDiv.innerHTML = `<p style="color: red;">Error: ${data.errors[0].message}</p>`;
     }
   } catch (error) {
-    messageDiv.innerHTML = `<p style="color: red;">Login failed. Please try again.</p>`;
+    messageDiv.innerHTML = `<p style="color: red;">Login failed. Please try again.</p>`;    
     console.error("Login error:", error);
   }
 }

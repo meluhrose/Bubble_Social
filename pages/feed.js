@@ -3,7 +3,7 @@ export function showFeed() {
 
   app.innerHTML = `
     <h1>Feed</h1>
-    <div id="posts">
+    <div id="feed" class="feed-container">
       <p>Your feed will appear here...</p>
     </div>
   `;
