@@ -4,19 +4,34 @@ export function showLogin() {
   app.innerHTML = `
     <h1>Login</h1>
     <form id="loginForm" class="login-form">
-      <input name="email" placeholder="Email" required />
-      <input name="password" type="password" placeholder="Password" required />
+      <input id="emailInput" name="email" placeholder="Email" required />
+      <input id="passwordInput" name="password" type="password" placeholder="Password" required />
       <button type="submit">Login</button>
+      <button type="button" id="testFillBtn" style="background-color: #6c757d; margin-top: 10px;">Fill Test Credentials</button>
     </form>
-    <div id="loginMessage"></div>
+    <div id="loginMessage" class="login-message"></div>
   `;
 
   const form = document.getElementById("loginForm");
   form.addEventListener("submit", handleLogin);
+  
+  const testFillBtn = document.getElementById("testFillBtn");
+  testFillBtn.addEventListener("click", fillTestCredentials);
+}
+
+function fillTestCredentials() {
+  document.getElementById("emailInput").value = "first.last@stud.noroff.no";
+  document.getElementById("passwordInput").value = "UzI1NiIsInR5cCI";
 }
 
 async function handleLogin(event) {
   event.preventDefault();
+  
+  // Check if user is on the login page
+  if (!window.location.hash.startsWith("#/login")) {
+    window.location.hash = "#/register";
+    return;
+  }
   
   const formData = new FormData(event.target);
   const email = formData.get("email");
