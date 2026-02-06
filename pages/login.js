@@ -7,21 +7,13 @@ export function showLogin() {
       <input id="emailInput" name="email" placeholder="Email" required />
       <input id="passwordInput" name="password" type="password" placeholder="Password" required />
       <button type="submit">Login</button>
-      <button type="button" id="testFillBtn" style="background-color: #6c757d; margin-top: 10px;">Fill Test Credentials</button>
     </form>
+    <p style="color: #666; font-size: 14px; margin-top: 10px;">Use the email and password you registered with.</p>
     <div id="loginMessage" class="login-message"></div>
   `;
 
   const form = document.getElementById("loginForm");
   form.addEventListener("submit", handleLogin);
-  
-  const testFillBtn = document.getElementById("testFillBtn");
-  testFillBtn.addEventListener("click", fillTestCredentials);
-}
-
-function fillTestCredentials() {
-  document.getElementById("emailInput").value = "first.last@stud.noroff.no";
-  document.getElementById("passwordInput").value = "UzI1NiIsInR5cCI";
 }
 
 async function handleLogin(event) {
@@ -38,6 +30,8 @@ async function handleLogin(event) {
   const password = formData.get("password");
   const messageDiv = document.getElementById("loginMessage");
 
+  console.log("Attempting login with:", { email, password: "***" });
+
   try {
     const response = await fetch("https://v2.api.noroff.dev/auth/login", {
       method: "POST",
@@ -48,6 +42,7 @@ async function handleLogin(event) {
     });
 
     const data = await response.json();
+    console.log("Login response:", response.status, data);
 
     if (response.ok) {
       // Store the access token
@@ -62,7 +57,9 @@ async function handleLogin(event) {
         window.location.hash = "#/feed";
       }, 1000);
     } else {
-      messageDiv.innerHTML = `<p style="color: red;">Error: ${data.errors[0].message}</p>`;
+      const errorMsg = data.errors?.[0]?.message || "Unknown error";
+      messageDiv.innerHTML = `<p style="color: red;">Error: ${errorMsg}</p>`;
+      console.error("Login failed:", data.errors);
     }
   } catch (error) {
     messageDiv.innerHTML = `<p style="color: red;">Login failed. Please try again.</p>`;    
