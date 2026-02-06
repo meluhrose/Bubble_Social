@@ -7,12 +7,32 @@ import { showProfile } from "./pages/profile.js";
 
 export function router() {
   const hash = window.location.hash || "#/homepage";
+  const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
 
+  //Public routes that don't require authentication
+
+    if (hash.startsWith("#/homepage")) {
+    showHomepage();
+    return;
+  }
+  
   if (hash.startsWith("#/login")) {
     showLogin();
-  } else if (hash.startsWith("#/register")) {
+    return;
+  }
+
+  if (hash.startsWith("#/register")) {
     showRegister();
-  } else if (hash.startsWith("#/feed")) {
+    return;
+  }
+
+  //Protected routes that require authentication
+  if (!isLoggedIn) {
+    window.location.hash = "#/login";
+    return;
+  }
+
+  if (hash.startsWith("#/feed")) {
     showFeed();
   } else if (hash.startsWith("#/post")) {
     showPost();
