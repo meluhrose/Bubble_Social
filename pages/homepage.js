@@ -4,9 +4,26 @@ export function showHomepage() {
   app.innerHTML = `
     <h1>Postly</h1>
     <div id="homepage" class="homepage-container">
-      <p>Hello, ${localStorage.getItem("userName") || "Guest"}! Welcome to Postly. You're one stop for all your social needs. You can add posts, view your feed, and manage your profile all in one place. Also can befriend other users to stay connected.</p>
+      <p>Hello, ${localStorage.getItem("userName") || "Guest"} and Welcome to Postly. You're one stop for all your social needs. You can add posts, view your feed, and manage your profile all in one place. Also can befriend other users to stay connected.</p>
+      <div id="homepageButtons" class="homepage-buttons">
+      <a href="#/login" class="btn">Login</a>
+      <a href="#/register" class="btn">Register</a>
+      </div>
     </div>
   `;
 
   // handle homepage here
+  updateHomepage();
+}
+
+
+function updateHomepage() {
+  const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
+  const homepageButtons = document.getElementById("homepageButtons");
+
+    if (isLoggedIn) {
+    homepageButtons.style.display = "none";
+  } else {
+    homepageButtons.style.display = "block";
+  }
 }

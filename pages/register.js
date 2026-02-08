@@ -7,7 +7,7 @@ export function showRegister() {
   app.innerHTML = `
     <h1>Register</h1>
     <form id="registerForm" class="register-form">
-      <input name="name" placeholder="Username (letters, numbers, _)" required />
+      <input name="name" type="text" placeholder="Username" required />
       <input name="email" type="email" placeholder="Email (@stud.noroff.no)" required />
       <input name="password" type="password" placeholder="Password (min 8 chars)" required />
       <button type="submit">Register</button>
@@ -30,9 +30,9 @@ async function handleRegister(event) {
   event.preventDefault();
 
   const formData = new FormData(event.target);
-  const name = formData.get("name");
   const email = formData.get("email");
   const password = formData.get("password");
+  const name = formData.get("name");
   const messageDiv = document.getElementById("registerMessage");
 
   // Client-side validation
@@ -46,12 +46,9 @@ async function handleRegister(event) {
     return;
   }
 
-  if (/[^\w_]/.test(name)) {
-    messageDiv.innerHTML = `<p style="color: red;">Username can only contain letters, numbers, and underscores</p>`;
-    return;
-  }
-
   try {
+    console.log("Attempting registration with:", { name, email, password: "***" });
+    
     const response = await fetch("https://v2.api.noroff.dev/auth/register", {
       method: "POST",
       headers: {
@@ -61,9 +58,24 @@ async function handleRegister(event) {
     });
 
     const data = await response.json();
+    console.log("Registration response:", response.status, data);
 
     if (!response.ok) {
-      throw new Error(data.errors?.[0]?.message || "Registration failed");
+      const errorMessage = data.errors?.[0]?.message || "Registration failed";
+      
+      // Check if it's a "profile already exists" error
+      if (errorMessage.toLowerCase().includes("profile") && errorMessage.toLowerCase().includes("exist")) {
+        messageDiv.innerHTML = `
+          <p style="color: red;">
+            This email is already registered. 
+            <a href="#/login" style="color: blue; text-decoration: underline;">Go to login</a>
+          </p>
+        `;
+      } else {
+        messageDiv.innerHTML = `<p style="color: red;">${errorMessage}</p>`;
+        console.error("Registration error:", data.errors);
+      }
+      return;
     }
 
     messageDiv.innerHTML = `
@@ -78,5 +90,6 @@ async function handleRegister(event) {
 
   } catch (error) {
     messageDiv.innerHTML = `<p style="color: red;">${error.message}</p>`;
+    console.error("Registration error:", error);
   }
 }

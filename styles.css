@@ -75,6 +75,24 @@ footer p {
     margin: 0;
 }
 
+/* Styles for homepage */
+.homepage-container {
+    max-width: 800px;
+    text-align: center;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.btn {
+    font-family: "Roboto Condensed", sans-serif;
+    display: inline-block;
+    margin: 10px;
+    padding: 10px 20px;
+    background-color: #086280;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
 
 /* Styles for login and register forms */
 
