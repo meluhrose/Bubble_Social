@@ -8,7 +8,9 @@ export function showPost() {
       <textarea name="content" placeholder="Write your post..."></textarea>
       <button>Create Post</button>
     </form>
+    <div id="postMessage"></div>
   `;
 
-  // handle post creation here
+// handle post creation here
 }
+
