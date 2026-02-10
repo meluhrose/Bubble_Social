@@ -50,12 +50,36 @@ async function handleLogin(event) {
       localStorage.setItem("userName", data.data.name);
       localStorage.setItem("userEmail", data.data.email);
       
-      messageDiv.innerHTML = `<p style="color: green;">Login successful! Redirecting...</p>`;
+      // Create API key
+      try {
+        const apiKeyResponse = await fetch("https://v2.api.noroff.dev/auth/create-api-key", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${data.data.accessToken}`
+          },
+          body: JSON.stringify({ name: "Postly API Key" })
+        });
+        
+        const apiKeyData = await apiKeyResponse.json();
+        console.log("API key response:", apiKeyResponse.status, apiKeyData);
+        
+        if (apiKeyResponse.ok) {
+          localStorage.setItem("apiKey", apiKeyData.data.key);
+          messageDiv.innerHTML = `<p style="color: green;">Login successful! Redirecting...</p>`;
+        } else {
+          messageDiv.innerHTML = `<p style="color: orange;">Login successful but API key creation failed. ${apiKeyData.errors?.[0]?.message || ''}</p>`;
+          console.error("API key creation failed:", apiKeyData);
+        }
+      } catch (apiKeyError) {
+        console.error("API key creation error:", apiKeyError);
+        messageDiv.innerHTML = `<p style="color: orange;">Login successful but API key creation failed. ${apiKeyError.message}</p>`;
+      }
       
       // Redirect to feed after successful login
       setTimeout(() => {
         window.location.hash = "#/feed";
-      }, 1000);
+      }, 1500);
     } else {
       const errorMsg = data.errors?.[0]?.message || "Unknown error";
       messageDiv.innerHTML = `<p style="color: red;">Error: ${errorMsg}</p>`;
