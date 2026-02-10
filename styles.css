@@ -183,5 +183,22 @@ footer p {
     font-family: "Roboto Condensed", sans-serif;
     font-size: 14px;
     color: #073057;
+}
 
+
+/*Styles for single post page*/
+
+
+.post-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border: #005f5f solid 2px;
+    border-radius: 25px;
+}
+
+.back-to-feed-btn {
+    display: block;
+    margin: 50px auto;
 }

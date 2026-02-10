@@ -9,11 +9,7 @@ export function showFeed() {
 
     <form id="createPostForm" class="create-post-form">
     <input type="text" name="title" placeholder="Post title" required />
-      <textarea
-        name="body"
-        placeholder="What's on your mind?"
-        required
-      ></textarea>
+      <textarea name="body" placeholder="What's on your mind?" required></textarea>
       <input type="file" name="image" accept="image/*" />
       <button type="submit">Post</button>
     </form>
@@ -73,7 +69,7 @@ async function fetchAndDisplayPosts() {
     }
     
     feedDiv.innerHTML = posts.map(post => `
-  <div class="post-section">
+  <div class="post-section" data-post-id="${post.id}" style="cursor: pointer;">
     ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
     <p class="post-author">${post.author?.name || "Anonymous"}</p>
     ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
@@ -82,12 +78,22 @@ async function fetchAndDisplayPosts() {
     <div class="post-meta">
       <span>${new Date(post.created).toLocaleDateString()}</span>
       <p>
-      <span><i class="fa-regular fa-heart"></i> ${post.reactions?.length || 0}</span>
-      <span><i class="fa-regular fa-comment"></i> ${post.comments?.length || 0}</span>
-      </p>
+      <div class="post-stats">
+          <p><i class="fa-regular fa-heart"></i> ${post._count?.reactions || 0} reactions</p>
+          <p><i class="fa-regular fa-comment"></i> ${post._count?.comments || 0} comments</p>
+        </div>
     </div>
   </div>
 `).join("");
+    
+    // Add click handlers to posts
+    const postElements = feedDiv.querySelectorAll(".post-section");
+    postElements.forEach(postElement => {
+      postElement.addEventListener("click", () => {
+        const postId = postElement.dataset.postId;
+        window.location.hash = `#/post/${postId}`;
+      });
+    });
     
     // Update pagination buttons
     if (meta) {
@@ -149,7 +155,7 @@ async function handleCreatePost(event) {
         "Authorization": `Bearer ${accessToken}`,
         "X-Noroff-API-Key": apiKey
       },
-      body: JSON.stringify({ title: formData.get("title").trim(), body: body.trim() })
+      body: JSON.stringify({ title: formData.get("title").trim(), body: body.trim() } )
     });
 
     const data = await response.json();
