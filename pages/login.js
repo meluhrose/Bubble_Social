@@ -58,7 +58,7 @@ async function handleLogin(event) {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${data.data.accessToken}`
           },
-          body: JSON.stringify({ name: "Postly API Key" })
+          body: JSON.stringify({ name: "Bubble API Key" })
         });
         
         const apiKeyData = await apiKeyResponse.json();
