@@ -2,9 +2,9 @@ export function showHomepage() {
   const app = document.getElementById("app");
 
   app.innerHTML = `
-    <h1>Postly</h1>
+    <h1>Bubble</h1>
     <div id="homepage" class="homepage-container">
-      <p>Hello, ${localStorage.getItem("userName") || "Guest"} and Welcome to Postly. You're one stop for all your social needs. You can add posts, view your feed, and manage your profile all in one place. Also can befriend other users to stay connected.</p>
+      <p>Hello, ${localStorage.getItem("userName") || "Guest"} and Welcome to Bubble. You're one stop for all your social needs. You can add posts, view your feed, and manage your profile all in one place. Also can befriend other users to stay connected.</p>
       <div id="homepageButtons" class="homepage-buttons">
       <a href="#/login" class="btn">Login</a>
       <a href="#/register" class="btn">Register</a>

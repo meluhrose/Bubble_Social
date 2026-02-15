@@ -160,6 +160,17 @@ footer p {
     margin-bottom: 5px;
 }
 
+.edit-post-btn, .delete-post-btn {
+    display: inline-block;
+    margin-top: 10px;
+    background-color: #086280;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    margin: 0 5px 10px 0;
+    cursor: pointer;
+}
+
 .post-image {
     max-width: 100%;
     height: auto;
@@ -183,5 +194,21 @@ footer p {
     font-family: "Roboto Condensed", sans-serif;
     font-size: 14px;
     color: #073057;
+}
 
+
+/*Styles for single post page*/
+
+.post-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border: #005f5f solid 2px;
+    border-radius: 25px;
+}
+
+.back-to-feed-btn {
+    display: block;
+    margin: 50px auto;
 }
