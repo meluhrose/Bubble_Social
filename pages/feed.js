@@ -1,45 +1,13 @@
+const postsPerPage = 15;
+let loadedPosts = [];
+let currentSearchTerm = "";
+let currentUserIdentity = { name: "", email: "" };
 let currentPage = 1;
-const postsPerPage = 10;
+let hasMorePages = true;
+let isLoadingPosts = false;
+let scrollObserver = null;
 
-function normalizeIdentity(value) {
-  return (value || "").trim().toLowerCase();
-}
-
-function getUserIdentity(accessToken) {
-  const storedName = normalizeIdentity(localStorage.getItem("userName"));
-  const storedEmail = normalizeIdentity(localStorage.getItem("userEmail"));
-
-  if (storedName || storedEmail) {
-    return { name: storedName, email: storedEmail };
-  }
-
-  try {
-    const tokenParts = accessToken?.split(".");
-    if (!tokenParts || tokenParts.length < 2) {
-      return { name: "", email: "" };
-    }
-
-    const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const normalizedBase64 = `${base64}${"=".repeat((4 - (base64.length % 4)) % 4)}`;
-    const payload = JSON.parse(atob(normalizedBase64));
-    return {
-      name: normalizeIdentity(payload?.name),
-      email: normalizeIdentity(payload?.email)
-    };
-  } catch {
-    return { name: "", email: "" };
-  }
-}
-
-function isPostOwner(post, userIdentity) {
-  const authorName = normalizeIdentity(post?.author?.name);
-  const authorEmail = normalizeIdentity(post?.author?.email);
-
-  return Boolean(
-    (userIdentity.name && authorName && userIdentity.name === authorName) ||
-    (userIdentity.email && authorEmail && userIdentity.email === authorEmail)
-  );
-}
+import { getUserIdentity, isPostOwner } from "../main.js";
 
 export function showFeed() {
   const app = document.getElementById("app");
@@ -55,70 +23,103 @@ export function showFeed() {
       <button type="submit">Post</button>
     </form>
 
+    <input id="feedSearchInput" type="search" placeholder="Search posts..." class="create-post-form" />
+
     <div id="feed" class="feed-container">
       <p>Loading posts...</p>
     </div>
 
-    <div id="pagination" class="pagination">
-      <button id="prevBtn" class="prevBtn">Previous</button>
-      <span id="pageIndicator" class="pageIndicator"></span>
-      <button id="nextBtn" class="nextBtn">Next</button>
-    </div>
+    <p id="feedLoadingStatus" class="pageIndicator"></p>
+    <div id="feedLoadMoreTrigger" aria-hidden="true"></div>
   `;
 
   // handle feed here
   fetchAndDisplayPosts();
+  setupInfiniteScroll();
   
   // Setup create post form
   const createPostForm = document.getElementById("createPostForm");
   createPostForm.addEventListener("submit", handleCreatePost);
+
+  const searchInput = document.getElementById("feedSearchInput");
+  searchInput.addEventListener("input", (event) => {
+    currentSearchTerm = event.target.value.trim().toLowerCase();
+    updateFeedDisplay();
+  });
 }
 
-async function fetchAndDisplayPosts() {
-  const feedDiv = document.getElementById("feed");
-  const accessToken = localStorage.getItem("accessToken");
-  const apiKey = localStorage.getItem("apiKey");
-  
-  if (!accessToken || !apiKey) {
-  window.location.hash = "#/login";
-  return;
+function normalizeSearchValue(value) {
+  return (value || "").toString().trim().toLowerCase();
 }
-  
-  console.log("Fetching posts with API key:", apiKey ? "Present" : "Missing");
-  
-  try {
-    const response = await fetch(`https://v2.api.noroff.dev/social/posts?limit=${postsPerPage}&page=${currentPage}&_author=true`, {
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Noroff-API-Key": apiKey
+
+function setupInfiniteScroll() {
+  const trigger = document.getElementById("feedLoadMoreTrigger");
+  if (!trigger) return;
+
+  if (scrollObserver) {
+    scrollObserver.disconnect();
+  }
+
+  scrollObserver = new IntersectionObserver(
+    (entries) => {
+      const isVisible = entries.some((entry) => entry.isIntersecting);
+      if (isVisible) {
+        loadMorePosts();
       }
-    });
-    const data = await response.json();
-    console.log("API Response:", response.status, data);
-    
-    if (!response.ok) {
-      feedDiv.innerHTML = `<p style="color: red;">Error fetching posts: ${data.errors?.[0]?.message || 'Unknown error'}</p>`;
-      return;
+    },
+    {
+      root: null,
+      rootMargin: "300px 0px",
+      threshold: 0.1
     }
-    
-    const posts = data.data;
-    const meta = data.meta;
-    const postsById = new Map(posts.map((post) => [post.id, post]));
-    const userIdentity = getUserIdentity(accessToken);
-    
-    if (!posts || posts.length === 0) {
-      feedDiv.innerHTML = `<p>No posts available.</p>`;
-      return;
-    }
-    
-    feedDiv.innerHTML = posts.map(post => `
+  );
+
+  scrollObserver.observe(trigger);
+}
+
+function updateLoadingStatus(message) {
+  const status = document.getElementById("feedLoadingStatus");
+  if (!status) return;
+  status.textContent = message || "";
+}
+
+function postMatchesSearch(post, searchTerm) {
+  if (!searchTerm) return true;
+
+  const searchableValues = [
+    post.title,
+    post.body,
+    post.author?.name,
+    post.author?.email,
+    post.media?.alt
+  ];
+
+  return searchableValues.some((value) =>
+    normalizeSearchValue(value).includes(searchTerm)
+  );
+}
+
+function renderPosts(posts, searchTerm = "") {
+  const feedDiv = document.getElementById("feed");
+  if (!feedDiv) return;
+
+  if (!posts || posts.length === 0) {
+    feedDiv.innerHTML = searchTerm
+      ? `<p>No posts found for "${searchTerm}".</p>`
+      : `<p>No posts available.</p>`;
+    return;
+  }
+
+  const postsById = new Map(loadedPosts.map((post) => [post.id, post]));
+
+  feedDiv.innerHTML = posts.map(post => `
   <div class="post-section" data-post-id="${post.id}" style="cursor: pointer;">
     ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
     <p class="post-author">${post.author?.name || "Anonymous"}</p>
     ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
     ${post.media?.url? `
           <img src="${post.media.url}" alt="${post.media.alt || "Post image"}" class="post-image"/>`: ""}
-    ${isPostOwner(post, userIdentity) ? `
+    ${isPostOwner(post, currentUserIdentity) ? `
       <button type="button" class="edit-post-btn" data-post-id="${post.id}">Edit Post</button>
       <button type="button" class="delete-post-btn" data-post-id="${post.id}">Delete</button>
       <form class="edit-post-form create-post-form" data-post-id="${post.id}" style="display: none; margin-top: 12px;">
@@ -140,100 +141,144 @@ async function fetchAndDisplayPosts() {
     </div>
   </div>
 `).join("");
-    
-    // Add click handlers to posts
-    const postElements = feedDiv.querySelectorAll(".post-section");
-    postElements.forEach(postElement => {
-      postElement.addEventListener("click", (event) => {
-        if (event.target.closest(".edit-post-btn") || event.target.closest(".delete-post-btn") || event.target.closest(".edit-post-form")) {
-          return;
-        }
-        const postId = postElement.dataset.postId;
-        window.location.hash = `#/post/${postId}`;
-      });
+
+  const postElements = feedDiv.querySelectorAll(".post-section");
+  postElements.forEach(postElement => {
+    postElement.addEventListener("click", (event) => {
+      if (event.target.closest(".edit-post-btn") || event.target.closest(".delete-post-btn") || event.target.closest(".edit-post-form")) {
+        return;
+      }
+      const postId = postElement.dataset.postId;
+      window.location.hash = `#/post/${postId}`;
+    });
+  });
+
+  const editButtons = feedDiv.querySelectorAll(".edit-post-btn");
+  editButtons.forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+
+      const postId = button.dataset.postId;
+      const form = feedDiv.querySelector(`.edit-post-form[data-post-id="${postId}"]`);
+      const post = postsById.get(postId);
+
+      if (!form || !post) return;
+
+      const isHidden = form.style.display === "none";
+      form.style.display = isHidden ? "block" : "none";
+      button.textContent = isHidden ? "Cancel" : "Edit Post";
+
+      if (isHidden) {
+        form.elements.title.value = post.title || "";
+        form.elements.body.value = post.body || "";
+        form.elements.imageUrl.value = post.media?.url || "";
+        form.elements.imageAlt.value = post.media?.alt || "";
+      }
+    });
+  });
+
+  const editForms = feedDiv.querySelectorAll(".edit-post-form");
+  editForms.forEach((form) => {
+    form.addEventListener("click", (event) => {
+      event.stopPropagation();
     });
 
-    const editButtons = feedDiv.querySelectorAll(".edit-post-btn");
-    editButtons.forEach((button) => {
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-
-        const postId = button.dataset.postId;
-        const form = feedDiv.querySelector(`.edit-post-form[data-post-id="${postId}"]`);
-        const post = postsById.get(postId);
-
-        if (!form || !post) return;
-
-        const isHidden = form.style.display === "none";
-        form.style.display = isHidden ? "block" : "none";
-        button.textContent = isHidden ? "Cancel" : "Edit Post";
-
-        if (isHidden) {
-          form.elements.title.value = post.title || "";
-          form.elements.body.value = post.body || "";
-          form.elements.imageUrl.value = post.media?.url || "";
-          form.elements.imageAlt.value = post.media?.alt || "";
-        }
-      });
+    form.addEventListener("submit", (event) => {
+      const postId = form.dataset.postId;
+      handleEditPostFromFeed(event, postId);
     });
+  });
 
-    const editForms = feedDiv.querySelectorAll(".edit-post-form");
-    editForms.forEach((form) => {
-      form.addEventListener("click", (event) => {
-        event.stopPropagation();
-      });
-
-      form.addEventListener("submit", (event) => {
-        const postId = form.dataset.postId;
-        handleEditPostFromFeed(event, postId);
-      });
+  const deleteButtons = feedDiv.querySelectorAll(".delete-post-btn");
+  deleteButtons.forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const postId = button.dataset.postId;
+      handleDeletePostFromFeed(postId);
     });
+  });
+}
 
-    const deleteButtons = feedDiv.querySelectorAll(".delete-post-btn");
-    deleteButtons.forEach((button) => {
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        const postId = button.dataset.postId;
-        handleDeletePostFromFeed(postId);
-      });
+function updateFeedDisplay() {
+  const filteredPosts = loadedPosts.filter((post) => postMatchesSearch(post, currentSearchTerm));
+  renderPosts(filteredPosts, currentSearchTerm);
+}
+
+async function fetchAndDisplayPosts() {
+  loadedPosts = [];
+  currentPage = 1;
+  hasMorePages = true;
+  updateLoadingStatus("Loading posts...");
+
+  const feedDiv = document.getElementById("feed");
+  if (feedDiv) {
+    feedDiv.innerHTML = `<p>Loading posts...</p>`;
+  }
+
+  await loadMorePosts();
+}
+
+async function loadMorePosts() {
+  const feedDiv = document.getElementById("feed");
+  const accessToken = localStorage.getItem("accessToken");
+  const apiKey = localStorage.getItem("apiKey");
+
+  if (isLoadingPosts || !hasMorePages) {
+    return;
+  }
+  
+  if (!accessToken || !apiKey) {
+    window.location.hash = "#/login";
+    return;
+  }
+
+  isLoadingPosts = true;
+  
+  console.log("Fetching posts with API key:", apiKey ? "Present" : "Missing");
+  
+  try {
+    const response = await fetch(`https://v2.api.noroff.dev/social/posts?limit=${postsPerPage}&page=${currentPage}&_author=true`, {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "X-Noroff-API-Key": apiKey
+      }
     });
-    
-    // Update pagination buttons
-    if (meta) {
-      paginationButtons(meta);
+    const data = await response.json();
+    console.log("API Response:", response.status, data);
+
+    if (!response.ok) {
+      if (feedDiv) {
+        feedDiv.innerHTML = `<p style="color: red;">Error fetching posts: ${data.errors?.[0]?.message || "Unknown error"}</p>`;
+      }
+      updateLoadingStatus("");
+      return;
+    }
+
+    const newPosts = data.data || [];
+    loadedPosts.push(...newPosts);
+
+    hasMorePages = data.meta ? !data.meta.isLastPage : false;
+    if (hasMorePages) {
+      currentPage += 1;
+    }
+
+    currentUserIdentity = getUserIdentity(accessToken);
+    updateFeedDisplay();
+
+    if (hasMorePages) {
+      updateLoadingStatus("Scroll down to load 15 more posts...");
+    } else {
+      updateLoadingStatus("All posts loaded");
     }
   } catch (error) {
     console.error("Error fetching posts:", error);
-    feedDiv.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
+    if (feedDiv) {
+      feedDiv.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
+    }
+    updateLoadingStatus("");
+  } finally {
+    isLoadingPosts = false;
   }
-}
-
-// Pagination button event listeners
-function paginationButtons(meta) {
-  const prevBtn = document.getElementById("prevBtn");
-  const nextBtn = document.getElementById("nextBtn");
-  const pageIndicator = document.getElementById("pageIndicator");
-
-  if (!prevBtn || !nextBtn || !pageIndicator) return;
-
-  pageIndicator.textContent = `Page ${meta.currentPage} of ${meta.pageCount}`;
-
-  prevBtn.disabled = meta.isFirstPage;
-  nextBtn.disabled = meta.isLastPage;
-
-  prevBtn.onclick = () => {
-    if (currentPage > 1) {
-      currentPage--;
-      fetchAndDisplayPosts();
-    }
-  };
-
-  nextBtn.onclick = () => {
-    if (currentPage < meta.pageCount) {
-      currentPage++;
-      fetchAndDisplayPosts();
-    }
-  };
 }
 
 // Handle create post
@@ -289,7 +334,6 @@ async function handleCreatePost(event) {
     
     if (response.ok) {
       event.target.reset();
-      currentPage = 1;
       fetchAndDisplayPosts();
     } else {
       alert(`Error: ${data.errors?.[0]?.message || 'Failed to create post'}`);
