@@ -8,6 +8,7 @@ let isLoadingPosts = false;
 let scrollObserver = null;
 
 import { getUserIdentity, isPostOwner } from "../main.js";
+import { handleEditPost, handleDeletePost } from "./post.js";
 
 export function showFeed() {
   const app = document.getElementById("app");
@@ -110,91 +111,88 @@ function renderPosts(posts, searchTerm = "") {
     return;
   }
 
-  const postsById = new Map(loadedPosts.map((post) => [post.id, post]));
+  feedDiv.innerHTML = posts.map(post => {
+    const canEdit = isPostOwner(post, currentUserIdentity);
 
-  feedDiv.innerHTML = posts.map(post => `
-  <div class="post-section" data-post-id="${post.id}" style="cursor: pointer;">
-    ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
-    <p class="post-author">${post.author?.name || "Anonymous"}</p>
-    ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
-    ${post.media?.url? `
-          <img src="${post.media.url}" alt="${post.media.alt || "Post image"}" class="post-image"/>`: ""}
-    ${isPostOwner(post, currentUserIdentity) ? `
-      <button type="button" class="edit-post-btn" data-post-id="${post.id}">Edit Post</button>
-      <button type="button" class="delete-post-btn" data-post-id="${post.id}">Delete</button>
-      <form class="edit-post-form create-post-form" data-post-id="${post.id}" style="display: none; margin-top: 12px;">
-        <input type="text" name="title" placeholder="Post title" required />
-        <textarea name="body" placeholder="What's on your mind?" required></textarea>
-        <input type="url" name="imageUrl" placeholder="Image URL (optional)" />
-        <input type="text" name="imageAlt" placeholder="Image description (optional)" />
+    return `
+  <div class="post-section" data-post-id="${post.id}">
+    <div class="post-content" style="cursor: pointer;">
+      ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
+      <p class="post-author">${post.author?.name || "Anonymous"}</p>
+      ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
+      ${post.media?.url? `
+            <img src="${post.media.url}" alt="${post.media.alt || "Post image"}" class="post-image"/>`: ""}
+      <div class="post-date">
+        <span>${new Date(post.created).toLocaleDateString()}</span>
+        <div class="post-stats">
+            <p><i class="fa-regular fa-heart"></i> ${post._count?.reactions || 0} reactions</p>
+            <p><i class="fa-regular fa-comment"></i> ${post._count?.comments || 0} comments</p>
+        </div>
+      </div>
+    </div>
+
+    ${canEdit ? `
+      <div class="post-actions">
+        <button class="btn edit-post-btn" data-post-id="${post.id}">Edit Post</button>
+        <button class="btn delete-btn delete-post-btn" data-post-id="${post.id}">Delete Post</button>
+      </div>
+
+      <form class="create-post-form edit-post-form" data-post-id="${post.id}" style="display: none; margin-top: 16px;">
+        <input type="text" name="title" placeholder="Post title" value="${post.title || ""}" required />
+        <textarea name="body" placeholder="What's on your mind?" required>${post.body || ""}</textarea>
+        <input type="url" name="imageUrl" placeholder="Image URL (optional)" value="${post.media?.url || ""}" />
+        <input type="text" name="imageAlt" placeholder="Image description (optional)" value="${post.media?.alt || ""}" />
         <button type="submit">Save Changes</button>
       </form>
     ` : ""}
-    <div class="post-meta">
-      <span>${new Date(post.created).toLocaleDateString()}</span>
-      <p>
-      <div class="post-stats">
-          <p><i class="fa-regular fa-heart"></i> ${post._count?.reactions || 0} reactions</p>
-          <p><i class="fa-regular fa-comment"></i> ${post._count?.comments || 0} comments</p>
-          
-        </div>
-    </div>
   </div>
-`).join("");
+`;
+  }).join("");
 
-  const postElements = feedDiv.querySelectorAll(".post-section");
-  postElements.forEach(postElement => {
-    postElement.addEventListener("click", (event) => {
-      if (event.target.closest(".edit-post-btn") || event.target.closest(".delete-post-btn") || event.target.closest(".edit-post-form")) {
-        return;
+  const postContentElements = feedDiv.querySelectorAll(".post-content");
+  postContentElements.forEach(postElement => {
+    postElement.addEventListener("click", () => {
+      const postId = postElement.closest(".post-section")?.dataset.postId;
+      if (postId) {
+        window.location.hash = `#/post/${postId}`;
       }
-      const postId = postElement.dataset.postId;
-      window.location.hash = `#/post/${postId}`;
     });
   });
 
-  const editButtons = feedDiv.querySelectorAll(".edit-post-btn");
-  editButtons.forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-
-      const postId = button.dataset.postId;
+  const editPostButtons = feedDiv.querySelectorAll(".edit-post-btn");
+  editPostButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const postId = btn.dataset.postId;
       const form = feedDiv.querySelector(`.edit-post-form[data-post-id="${postId}"]`);
-      const post = postsById.get(postId);
-
-      if (!form || !post) return;
+      if (!form) return;
 
       const isHidden = form.style.display === "none";
       form.style.display = isHidden ? "block" : "none";
-      button.textContent = isHidden ? "Cancel" : "Edit Post";
-
-      if (isHidden) {
-        form.elements.title.value = post.title || "";
-        form.elements.body.value = post.body || "";
-        form.elements.imageUrl.value = post.media?.url || "";
-        form.elements.imageAlt.value = post.media?.alt || "";
-      }
+      btn.textContent = isHidden ? "Cancel" : "Edit Post";
     });
   });
 
-  const editForms = feedDiv.querySelectorAll(".edit-post-form");
-  editForms.forEach((form) => {
-    form.addEventListener("click", (event) => {
-      event.stopPropagation();
-    });
-
+  const editPostForms = feedDiv.querySelectorAll(".edit-post-form");
+  editPostForms.forEach((form) => {
     form.addEventListener("submit", (event) => {
       const postId = form.dataset.postId;
-      handleEditPostFromFeed(event, postId);
+      handleEditPost(event, postId);
     });
   });
 
-  const deleteButtons = feedDiv.querySelectorAll(".delete-post-btn");
-  deleteButtons.forEach((button) => {
-    button.addEventListener("click", (event) => {
+  const deletePostBtns = feedDiv.querySelectorAll(".delete-post-btn");
+  deletePostBtns.forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
       event.stopPropagation();
-      const postId = button.dataset.postId;
-      handleDeletePostFromFeed(postId);
+
+      const postId = btn.dataset.postId;
+      const post = loadedPosts.find(p => p.id === postId);
+      const label = post?.title ? `"${post.title}"` : "this post";
+
+      if(!confirm(`Are you sure you want to delete ${label}?`)) return;
+      handleDeletePost(postId, btn);
+
     });
   });
 }
@@ -217,6 +215,7 @@ async function fetchAndDisplayPosts() {
 
   await loadMorePosts();
 }
+
 
 async function loadMorePosts() {
   const feedDiv = document.getElementById("feed");
@@ -341,104 +340,5 @@ async function handleCreatePost(event) {
   } catch (error) {
     console.error("Error creating post:", error);
     alert("Failed to create post");
-  }
-}
-
-async function handleEditPostFromFeed(event, postId) {
-  event.preventDefault();
-
-  const formData = new FormData(event.target);
-  const title = formData.get("title").trim();
-  const body = formData.get("body").trim();
-  const imageUrl = formData.get("imageUrl").trim();
-  const imageAlt = formData.get("imageAlt").trim();
-  const accessToken = localStorage.getItem("accessToken");
-  const apiKey = localStorage.getItem("apiKey");
-
-  if (!title || !body) {
-    alert("Title and post text are required");
-    return;
-  }
-
-  if (imageUrl) {
-    try {
-      new URL(imageUrl);
-    } catch {
-      alert("Please enter a valid image URL");
-      return;
-    }
-  }
-
-  const payload = { title, body };
-
-  if (imageUrl) {
-    payload.media = {
-      url: imageUrl,
-      alt: imageAlt || "Post image"
-    };
-  }
-
-  try {
-    const response = await fetch(`https://v2.api.noroff.dev/social/posts/${postId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Noroff-API-Key": apiKey
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      alert(`Error: ${data.errors?.[0]?.message || "Failed to update post"}`);
-      return;
-    }
-
-    alert("Post updated successfully");
-    fetchAndDisplayPosts();
-  } catch (error) {
-    console.error("Error updating post:", error);
-    alert("Failed to update post");
-  }
-}
-
-async function handleDeletePostFromFeed(postId) {
-  const accessToken = localStorage.getItem("accessToken");
-  const apiKey = localStorage.getItem("apiKey");
-
-  const confirmed = confirm("Are you sure you want to delete this post?");
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`https://v2.api.noroff.dev/social/posts/${postId}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Noroff-API-Key": apiKey
-      }
-    });
-
-    if (!response.ok) {
-      let errorMessage = "Failed to delete post";
-      try {
-        const data = await response.json();
-        errorMessage = data.errors?.[0]?.message || errorMessage;
-      } catch {
-        errorMessage = "Failed to delete post";
-      }
-
-      alert(`Error: ${errorMessage}`);
-      return;
-    }
-
-    alert("Post deleted successfully");
-    fetchAndDisplayPosts();
-  } catch (error) {
-    console.error("Error deleting post:", error);
-    alert("Failed to delete post");
   }
 }

@@ -96,14 +96,15 @@ async function fetchAndDisplaySinglePost(postId) {
       <div class="single-post">
         ${post.title ? `<h2>${post.title}</h2>` : ""}
         <p class="post-author">${post.author?.name || "Anonymous"}</p>
-        <p class="post-date">${new Date(post.created).toLocaleDateString()}</p>
         ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
         ${post.media?.url ? `<img src="${post.media.url}" alt="${post.media.alt || "Post image"}" class="post-image" />` : ""}
-        ${canEdit ? `<button id="editPostBtn" class="btn">Edit Post</button>` : ""}
+        <p class="post-date">${new Date(post.created).toLocaleDateString()}</p>
         <div class="post-stats">
           <p><i class="fa-regular fa-heart"></i> ${post._count?.reactions || 0} reactions</p>
           <p><i class="fa-regular fa-comment"></i> ${post._count?.comments || 0} comments</p>
         </div>
+        ${canEdit ? `<button id="editPostBtn" class="btn edit-post-btn">Edit Post</button>` : ""}
+        ${canEdit ? `<button id="deletePostBtn" type="button" class="btn delete-post-btn">Delete Post</button>` : ""}
       </div>
       ${canEdit ? `
         <form id="editPostForm" class="create-post-form" style="display: none; margin-top: 16px;">
@@ -119,6 +120,7 @@ async function fetchAndDisplaySinglePost(postId) {
     if (canEdit) {
       const editPostBtn = document.getElementById("editPostBtn");
       const editPostForm = document.getElementById("editPostForm");
+      const deletePostBtn = document.getElementById("deletePostBtn");
 
       editPostBtn.addEventListener("click", () => {
         const isHidden = editPostForm.style.display === "none";
@@ -129,6 +131,18 @@ async function fetchAndDisplaySinglePost(postId) {
       editPostForm.addEventListener("submit", (event) => {
         handleEditPost(event, postId);
       });
+      deletePostBtn.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const label = post.title ? `"${post.title}"` : "this post";
+  const confirmed = confirm(`Are you sure you want to delete ${label}?`);
+  if (!confirmed) return;
+
+  handleDeletePost(postId, deletePostBtn, () => {
+    window.location.hash = "#/feed";
+  });
+});
     }
   } catch (error) {
     console.error("Error fetching single post:", error);
@@ -136,7 +150,7 @@ async function fetchAndDisplaySinglePost(postId) {
   }
 }
 
-async function handleEditPost(event, postId) {
+export async function handleEditPost(event, postId) {
   event.preventDefault();
 
   const formData = new FormData(event.target);
@@ -189,10 +203,61 @@ async function handleEditPost(event, postId) {
     }
 
     alert("Post updated successfully");
-    fetchAndDisplaySinglePost(postId);
+    window.location.reload();
   } catch (error) {
     console.error("Error updating post:", error);
     alert("Failed to update post");
   }
 }
 
+export async function handleDeletePost(postId, deleteButton = null, onSuccess = null) {
+  const accessToken = localStorage.getItem("accessToken");
+  const apiKey = localStorage.getItem("apiKey");
+
+  if (!accessToken || !apiKey) {
+    alert("Session expired. Please log in again.");
+    window.location.hash = "#/login";
+    return;
+  }
+
+  const initialText = deleteButton?.textContent;
+  if (deleteButton) {
+    deleteButton.disabled = true;
+    deleteButton.textContent = "Deleting...";
+  }
+
+  try {
+    const response = await fetch(`https://v2.api.noroff.dev/social/posts/${postId}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "X-Noroff-API-Key": apiKey
+      }
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Failed to delete post";
+      try {
+        const data = await response.json();
+        errorMessage = data.errors?.[0]?.message || errorMessage;
+      } catch {
+        errorMessage = "Failed to delete post";
+      }
+      alert(`Error (${response.status}): ${errorMessage}`);
+      return;
+    }
+    alert("Post deleted successfully");
+    if (onSuccess) {
+      onSuccess();
+    }
+    location.reload();
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    alert("Failed to delete post");
+  } finally {
+    if (deleteButton) {
+      deleteButton.disabled = false;
+      deleteButton.textContent = initialText || "Delete Post";
+    }
+  }
+}
