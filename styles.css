@@ -241,7 +241,7 @@ form.edit-post-form textarea:focus {
     font-size: 16px;
 }
 
-.post-meta {
+.post-date {
     font-family: "Roboto Condensed", sans-serif;
     font-size: 14px;
     color: #073057;
