@@ -21,7 +21,7 @@ export function showFeed() {
       <textarea name="body" placeholder="What's on your mind?" required></textarea>
       <input type="url" name="imageUrl" placeholder="Image URL (optional)" />
       <input type="text" name="imageAlt" placeholder="Image description (optional)" />
-      <button type="submit">Post</button>
+      <button type="submit" class="btn">Post</button>
     </form>
 
     <input id="feedSearchInput" type="search" placeholder="Search posts..." class="create-post-form" />
@@ -37,6 +37,7 @@ export function showFeed() {
   // handle feed here
   fetchAndDisplayPosts();
   setupInfiniteScroll();
+  setupFeedEventListeners();
   
   // Setup create post form
   const createPostForm = document.getElementById("createPostForm");
@@ -51,6 +52,60 @@ export function showFeed() {
 
 function normalizeSearchValue(value) {
   return (value || "").toString().trim().toLowerCase();
+}
+
+function setupFeedEventListeners() {
+  const feedDiv = document.getElementById("feed");
+  if (!feedDiv) return;
+  
+  // Use event delegation - attach one listener to the feed container
+  feedDiv.addEventListener("click", (event) => {
+    const target = event.target;
+    
+    // Handle post content clicks (navigate to post detail)
+    const postContent = target.closest(".post-content");
+    if (postContent && !target.closest("button")) {
+      const postId = postContent.closest(".post-section")?.dataset.postId;
+      if (postId) {
+        window.location.hash = `#/post/${postId}`;
+      }
+      return;
+    }
+    
+    // Handle edit button clicks
+    if (target.classList.contains("edit-post-btn")) {
+      event.stopPropagation();
+      const postId = target.dataset.postId;
+      const form = feedDiv.querySelector(`.edit-post-form[data-post-id="${postId}"]`);
+      if (form) {
+        const isHidden = form.style.display === "none";
+        form.style.display = isHidden ? "flex" : "none";
+        target.textContent = isHidden ? "Cancel" : "Edit Post";
+      }
+      return;
+    }
+    
+    // Handle delete button clicks
+    if (target.classList.contains("delete-post-btn")) {
+      event.preventDefault();
+      event.stopPropagation();
+      const postId = target.dataset.postId;
+      const post = loadedPosts.find(p => p.id === postId);
+      const label = post?.title ? `"${post.title}"` : "this post";
+      if (confirm(`Are you sure you want to delete ${label}?`)) {
+        handleDeletePost(postId, target);
+      }
+      return;
+    }
+  });
+  
+  // Handle form submissions with event delegation
+  feedDiv.addEventListener("submit", (event) => {
+    if (event.target.classList.contains("edit-post-form")) {
+      const postId = event.target.dataset.postId;
+      handleEditPost(event, postId);
+    }
+  });
 }
 
 function setupInfiniteScroll() {
@@ -117,15 +172,18 @@ function renderPosts(posts, searchTerm = "") {
     return `
   <div class="post-section" data-post-id="${post.id}">
     <div class="post-content" style="cursor: pointer;">
-      ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
-      <p class="post-author">${post.author?.name || "Anonymous"}</p>
+      <div id="post-author-info" class="post-author-info">
+      <p class="avatar">${post.author?.avatar?.url ? `<img src="${post.author.avatar.url}" class="post-avatar" alt="${post.author.avatar.alt || "Avatar"}" />` : ""}</p>
+        <p class="post-author">${post.author?.name || "Anonymous"}</p>
+        </div>
+        ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
       ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
       ${post.media?.url? `
             <img src="${post.media.url}" alt="${post.media.alt || "Post image"}" class="post-image"/>`: ""}
       <div class="post-date">
         <span>${new Date(post.created).toLocaleDateString()}</span>
         <div class="post-stats">
-            <p><i class="fa-regular fa-heart"></i> ${post._count?.reactions || 0} reactions</p>
+            <p><i class="fa-regular fa-heart"></i> ${post._count?.Likes || 0} Likes</p>
             <p><i class="fa-regular fa-comment"></i> ${post._count?.comments || 0} comments</p>
         </div>
       </div>
@@ -142,59 +200,12 @@ function renderPosts(posts, searchTerm = "") {
         <textarea name="body" placeholder="What's on your mind?" required>${post.body || ""}</textarea>
         <input type="url" name="imageUrl" placeholder="Image URL (optional)" value="${post.media?.url || ""}" />
         <input type="text" name="imageAlt" placeholder="Image description (optional)" value="${post.media?.alt || ""}" />
-        <button type="submit">Save Changes</button>
+        <button type="submit" class="btn">Save Changes</button>
       </form>
     ` : ""}
   </div>
 `;
   }).join("");
-
-  const postContentElements = feedDiv.querySelectorAll(".post-content");
-  postContentElements.forEach(postElement => {
-    postElement.addEventListener("click", () => {
-      const postId = postElement.closest(".post-section")?.dataset.postId;
-      if (postId) {
-        window.location.hash = `#/post/${postId}`;
-      }
-    });
-  });
-
-  const editPostButtons = feedDiv.querySelectorAll(".edit-post-btn");
-  editPostButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const postId = btn.dataset.postId;
-      const form = feedDiv.querySelector(`.edit-post-form[data-post-id="${postId}"]`);
-      if (!form) return;
-
-      const isHidden = form.style.display === "none";
-      form.style.display = isHidden ? "block" : "none";
-      btn.textContent = isHidden ? "Cancel" : "Edit Post";
-    });
-  });
-
-  const editPostForms = feedDiv.querySelectorAll(".edit-post-form");
-  editPostForms.forEach((form) => {
-    form.addEventListener("submit", (event) => {
-      const postId = form.dataset.postId;
-      handleEditPost(event, postId);
-    });
-  });
-
-  const deletePostBtns = feedDiv.querySelectorAll(".delete-post-btn");
-  deletePostBtns.forEach((btn) => {
-    btn.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      const postId = btn.dataset.postId;
-      const post = loadedPosts.find(p => p.id === postId);
-      const label = post?.title ? `"${post.title}"` : "this post";
-
-      if(!confirm(`Are you sure you want to delete ${label}?`)) return;
-      handleDeletePost(postId, btn);
-
-    });
-  });
 }
 
 function updateFeedDisplay() {
@@ -236,7 +247,7 @@ async function loadMorePosts() {
   console.log("Fetching posts with API key:", apiKey ? "Present" : "Missing");
   
   try {
-    const response = await fetch(`https://v2.api.noroff.dev/social/posts?limit=${postsPerPage}&page=${currentPage}&_author=true`, {
+    const response = await fetch(`https://v2.api.noroff.dev/social/posts?limit=${postsPerPage}&page=${currentPage}&_author=true&sort=created&sortOrder=desc`, {
       headers: {
         "Authorization": `Bearer ${accessToken}`,
         "X-Noroff-API-Key": apiKey

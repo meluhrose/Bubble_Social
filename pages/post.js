@@ -94,13 +94,16 @@ async function fetchAndDisplaySinglePost(postId) {
 
     postDiv.innerHTML = `
       <div class="single-post">
-        ${post.title ? `<h2>${post.title}</h2>` : ""}
+        <div id="post-author-info" class="post-author-info">
+        <p class="avatar">${post.author?.avatar?.url ? `<img src="${post.author.avatar.url}" class="post-avatar" alt="${post.author.avatar.alt || "Avatar"}" />` : ""}</p>
         <p class="post-author">${post.author?.name || "Anonymous"}</p>
+        </div>
+        ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
         ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
         ${post.media?.url ? `<img src="${post.media.url}" alt="${post.media.alt || "Post image"}" class="post-image" />` : ""}
         <p class="post-date">${new Date(post.created).toLocaleDateString()}</p>
         <div class="post-stats">
-          <p><i class="fa-regular fa-heart"></i> ${post._count?.reactions || 0} reactions</p>
+          <p><i class="fa-regular fa-heart"></i> ${post._count?.Likes || 0} Likes</p>
           <p><i class="fa-regular fa-comment"></i> ${post._count?.comments || 0} comments</p>
         </div>
         ${canEdit ? `<button id="editPostBtn" class="btn edit-post-btn">Edit Post</button>` : ""}
@@ -112,7 +115,7 @@ async function fetchAndDisplaySinglePost(postId) {
           <textarea name="body" placeholder="What's on your mind?" required>${post.body || ""}</textarea>
           <input type="url" name="imageUrl" placeholder="Image URL (optional)" value="${post.media?.url || ""}" />
           <input type="text" name="imageAlt" placeholder="Image description (optional)" value="${post.media?.alt || ""}" />
-          <button type="submit">Save Changes</button>
+          <button type="submit" class="btn">Save Changes</button>
         </form>
       ` : ""}
     `;
@@ -124,7 +127,7 @@ async function fetchAndDisplaySinglePost(postId) {
 
       editPostBtn.addEventListener("click", () => {
         const isHidden = editPostForm.style.display === "none";
-        editPostForm.style.display = isHidden ? "block" : "none";
+        editPostForm.style.display = isHidden ? "flex" : "none";
         editPostBtn.textContent = isHidden ? "Cancel" : "Edit Post";
       });
 
