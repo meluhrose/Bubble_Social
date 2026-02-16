@@ -129,18 +129,15 @@ footer p {
 }
 
 
-/*Styles for Feed and Profile pages */
+/*Styles for Feed Page */
 
-.feed-container,
-.profile-container {
+.feed-container {
     max-width: 800px;
     height: fit-content;
     word-wrap: break-word;
     margin: 0 auto;
     padding: 20px;
 }
-
-/*Styles for create and edit post forms*/
 
 .create-post-form,
 .edit-post-form {
@@ -157,8 +154,6 @@ footer p {
 
 form.create-post-form input,
 form.create-post-form textarea,
-form.edit-post-form input,
-form.edit-post-form textarea,
 #feedSearchInput {
     font-family: "Roboto Condensed", sans-serif;
     font-size: 14px;
@@ -188,11 +183,87 @@ form.create-post-form button {
 
 #feedSearchInput:focus,
 form.create-post-form input:focus,
-form.create-post-form textarea:focus,
-form.edit-post-form input:focus,
-form.edit-post-form textarea:focus {
+form.create-post-form textarea:focus{
     outline: none;
     border-color: #6147ad;
+}
+
+/*Styles for profile page*/
+
+.profile-card {
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border: #6147ad solid 2px;
+    border-radius: 25px;
+    text-align: center;
+}
+
+.profile-pic {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-top: 20px;
+}
+
+.profile-stats {
+    margin-top: 20px;
+    font-family: "Roboto Condensed", sans-serif;
+    color: #073544;
+    text-align: left;
+
+}
+
+/*Styles for editing post and profile forms*/
+
+.post-author-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.post-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.edit-post-form,
+.edit-profile-form {
+    max-width: 800px;
+    margin: 0 auto 16px;
+    display: flex;
+    flex-direction: column;
+    border: #6147ad solid 2px;
+    border-radius: 25px;
+    padding: 16px;
+}
+
+form.edit-post-form input,
+form.edit-post-form textarea,
+form.edit-profile-form input,
+form.edit-profile-form textarea {
+    font-family: "Roboto Condensed", sans-serif;
+    font-size: 14px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 25px;
+}
+
+form.create-post-form textarea {
+    min-height: 100%;
+    resize: vertical;
+}
+
+form.create-post-form button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    width: 150px;
 }
 
 .post-section {
