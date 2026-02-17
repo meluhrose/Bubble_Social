@@ -13,7 +13,7 @@ export function showPost() {
     <div id="singlePost" class="post-container">
       <p>Loading post...</p>
     </div>
-    <button id="backToFeed" class="btn back-to-feed-btn">Back to Feed</button>
+    <button id="backToFeed" class="back-to-feed-btn">Back to Feed</button>
   `;
 
   fetchAndDisplaySinglePost(postId);
@@ -63,6 +63,7 @@ function isPostOwner(post, userIdentity) {
   );
 }
 
+
 async function fetchAndDisplaySinglePost(postId) {
   const postDiv = document.getElementById("singlePost");
   const accessToken = localStorage.getItem("accessToken");
@@ -96,7 +97,7 @@ async function fetchAndDisplaySinglePost(postId) {
       <div class="single-post">
         <div id="post-author-info" class="post-author-info">
         <p class="avatar">${post.author?.avatar?.url ? `<img src="${post.author.avatar.url}" class="post-avatar" alt="${post.author.avatar.alt || "Avatar"}" />` : ""}</p>
-        <p class="post-author">${post.author?.name || "Anonymous"}</p>
+        <p class="post-author"><a href="#/profile/${post.author?.name || ""}">${post.author?.name || "Anonymous"}</a></p>
         </div>
         ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
         ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
@@ -106,8 +107,8 @@ async function fetchAndDisplaySinglePost(postId) {
           <p><i class="fa-regular fa-heart"></i> ${post._count?.Likes || 0} Likes</p>
           <p><i class="fa-regular fa-comment"></i> ${post._count?.comments || 0} comments</p>
         </div>
-        ${canEdit ? `<button id="editPostBtn" class="btn edit-post-btn">Edit Post</button>` : ""}
-        ${canEdit ? `<button id="deletePostBtn" type="button" class="btn delete-post-btn">Delete Post</button>` : ""}
+        ${canEdit ? `<button id="editPostBtn">Edit Post</button>` : ""}
+        ${canEdit ? `<button id="deletePostBtn" type="button">Delete Post</button>` : ""}
       </div>
       ${canEdit ? `
         <form id="editPostForm" class="create-post-form" style="display: none; margin-top: 16px;">
@@ -115,7 +116,7 @@ async function fetchAndDisplaySinglePost(postId) {
           <textarea name="body" placeholder="What's on your mind?" required>${post.body || ""}</textarea>
           <input type="url" name="imageUrl" placeholder="Image URL (optional)" value="${post.media?.url || ""}" />
           <input type="text" name="imageAlt" placeholder="Image description (optional)" value="${post.media?.alt || ""}" />
-          <button type="submit" class="btn">Save Changes</button>
+          <button type="submit">Save Changes</button>
         </form>
       ` : ""}
     `;

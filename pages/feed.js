@@ -21,7 +21,7 @@ export function showFeed() {
       <textarea name="body" placeholder="What's on your mind?" required></textarea>
       <input type="url" name="imageUrl" placeholder="Image URL (optional)" />
       <input type="text" name="imageAlt" placeholder="Image description (optional)" />
-      <button type="submit" class="btn">Post</button>
+      <button type="submit">Post</button>
     </form>
 
     <input id="feedSearchInput" type="search" placeholder="Search posts..." class="create-post-form" />
@@ -174,25 +174,25 @@ function renderPosts(posts, searchTerm = "") {
     <div class="post-content" style="cursor: pointer;">
       <div id="post-author-info" class="post-author-info">
       <p class="avatar">${post.author?.avatar?.url ? `<img src="${post.author.avatar.url}" class="post-avatar" alt="${post.author.avatar.alt || "Avatar"}" />` : ""}</p>
-        <p class="post-author">${post.author?.name || "Anonymous"}</p>
+        <p class="post-author"><a href="#/profile/${post.author?.name || ""}" onclick="event.stopPropagation()">${post.author?.name || "Anonymous"}</a></p>
         </div>
         ${post.title ? `<h2 class="post-title">${post.title}</h2>` : ""}
-      ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
-      ${post.media?.url? `
-            <img src="${post.media.url}" alt="${post.media.alt || "Post image"}" class="post-image"/>`: ""}
-      <div class="post-date">
-        <span>${new Date(post.created).toLocaleDateString()}</span>
-        <div class="post-stats">
+        ${post.body ? `<p class="post-body">${post.body}</p>` : ""}
+        ${post.media?.url? `
+          <img src="${post.media.url}" alt="${post.media.alt || "Post image"}" class="post-image"/>`: ""}
+          <div class="post-date">
+          <span>${new Date(post.created).toLocaleDateString()}</span>
+          <div class="post-stats">
             <p><i class="fa-regular fa-heart"></i> ${post._count?.Likes || 0} Likes</p>
             <p><i class="fa-regular fa-comment"></i> ${post._count?.comments || 0} comments</p>
-        </div>
-      </div>
+            </div>
+          </div>
     </div>
 
     ${canEdit ? `
       <div class="post-actions">
-        <button class="btn edit-post-btn" data-post-id="${post.id}">Edit Post</button>
-        <button class="btn delete-btn delete-post-btn" data-post-id="${post.id}">Delete Post</button>
+        <button class="edit-post-btn" data-post-id="${post.id}">Edit Post</button>
+        <button class="delete-btn delete-post-btn" data-post-id="${post.id}">Delete Post</button>
       </div>
 
       <form class="create-post-form edit-post-form" data-post-id="${post.id}" style="display: none; margin-top: 16px;">
@@ -200,7 +200,7 @@ function renderPosts(posts, searchTerm = "") {
         <textarea name="body" placeholder="What's on your mind?" required>${post.body || ""}</textarea>
         <input type="url" name="imageUrl" placeholder="Image URL (optional)" value="${post.media?.url || ""}" />
         <input type="text" name="imageAlt" placeholder="Image description (optional)" value="${post.media?.alt || ""}" />
-        <button type="submit" class="btn">Save Changes</button>
+        <button type="submit">Save Changes</button>
       </form>
     ` : ""}
   </div>
