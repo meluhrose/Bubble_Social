@@ -126,7 +126,6 @@ footer p {
     outline: none;
 }
 
-
 /*Styles for Feed Page */
 
 .feed-container {
@@ -325,4 +324,31 @@ form.create-post-form button {
 .back-to-feed-btn {
     display: block;
     margin: 50px auto;
+}
+
+/*Media Queries*/
+
+@media (max-width: 768px) {
+    .feed-container,
+    .create-post-form,
+    .edit-post-form,
+    .profile-card,
+    .posts-container,
+    .post-container {
+        max-width: 100%;
+        padding: 10px;
+    }
+
+    #feedSearchInput {
+        width: 100%;
+    }
+
+    .post-title {
+        font-size: 18px;
+    }
+
+    .post-date {
+        font-size: 12px;
+    }
+
 }
