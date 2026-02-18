@@ -6,8 +6,8 @@ export function showHomepage() {
     <div id="homepage" class="homepage-container">
       <p>Hello, ${localStorage.getItem("userName") || "Guest"} and Welcome to Bubble. You're one stop for all your social needs. You can add posts, view your feed, and manage your profile all in one place. Also can befriend other users to stay connected.</p>
       <div id="homepageButtons" class="homepage-buttons">
-      <a href="#/login" class="btn">Login</a>
-      <a href="#/register" class="btn">Register</a>
+      <button onclick="window.location.href='#/login'">Login</button>
+      <button onclick="window.location.href='#/register'">Register</button>
       </div>
     </div>
   `;
