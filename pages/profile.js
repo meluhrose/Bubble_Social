@@ -1,3 +1,5 @@
+import { showAlert } from "../utils.js";
+
 export function showProfile() {
   const app = document.getElementById("app");
 
@@ -119,6 +121,7 @@ function renderProfile(profile, currentUser) {
   </div>
 `;
 
+// Handle follow/unfollow button
 const followBtn = document.getElementById("followBtn");
 
 if (followBtn) {
@@ -150,14 +153,14 @@ if (followBtn) {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.errors?.[0]?.message || "Failed to update follow status");
+        showAlert(data.errors?.[0]?.message || "Failed to update follow status", 'error');
         return;
       }
 
       //Refresh profile to get updated counts and button state
       fetchAndDisplayProfile(profileName);
     } catch (error) {
-      alert("Something went wrong");
+      showAlert("Something went wrong", 'error');
     }
   }
 }
@@ -222,14 +225,17 @@ if (followBtn) {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.errors?.[0]?.message || "Failed to update profile");
+        showAlert(data.errors?.[0]?.message || "Failed to update profile", 'error');
         return;
       }
 
-      alert("Profile updated successfully");
-      location.reload();
+      showAlert("Profile updated successfully", 'success');
+      
+      setTimeout(() => {
+        location.reload();
+      }, 1500);
     } catch (error) {
-      alert("Something went wrong");
+      showAlert("Something went wrong", 'error');
     }
   }
 

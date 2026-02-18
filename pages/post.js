@@ -1,3 +1,6 @@
+import { showAlert, showConfirm } from "../utils.js";
+import { getUserIdentity, isPostOwner } from "../main.js";
+
 export function showPost() {
   const app = document.getElementById("app");
   const hash = window.location.hash;
@@ -23,47 +26,13 @@ export function showPost() {
   });
 }
 
-function normalizeIdentity(value) {
-  return (value || "").trim().toLowerCase();
-}
-
-function getUserIdentity(accessToken) {
-  const storedName = normalizeIdentity(localStorage.getItem("userName"));
-  const storedEmail = normalizeIdentity(localStorage.getItem("userEmail"));
-
-  if (storedName || storedEmail) {
-    return { name: storedName, email: storedEmail };
-  }
-
-  try {
-    const tokenParts = accessToken?.split(".");
-    if (!tokenParts || tokenParts.length < 2) {
-      return { name: "", email: "" };
-    }
-
-    const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const normalizedBase64 = `${base64}${"=".repeat((4 - (base64.length % 4)) % 4)}`;
-    const payload = JSON.parse(atob(normalizedBase64));
-    return {
-      name: normalizeIdentity(payload?.name),
-      email: normalizeIdentity(payload?.email)
-    };
-  } catch {
-    return { name: "", email: "" };
-  }
-}
-
-function isPostOwner(post, userIdentity) {
-  const authorName = normalizeIdentity(post?.author?.name);
-  const authorEmail = normalizeIdentity(post?.author?.email);
-
-  return Boolean(
-    (userIdentity.name && authorName && userIdentity.name === authorName) ||
-    (userIdentity.email && authorEmail && userIdentity.email === authorEmail)
-  );
-}
-
-
+/**
+ * Fetches and displays a single post with author information and edit controls.
+ * Checks user authentication and ownership to show appropriate controls.
+ * @async
+ * @param {string} postId - The unique identifier of the post to display
+ * @returns {Promise<void>}
+ */
 async function fetchAndDisplaySinglePost(postId) {
   const postDiv = document.getElementById("singlePost");
   const accessToken = localStorage.getItem("accessToken");
@@ -135,18 +104,22 @@ async function fetchAndDisplaySinglePost(postId) {
       editPostForm.addEventListener("submit", (event) => {
         handleEditPost(event, postId);
       });
-      deletePostBtn.addEventListener("click", (event) => {
-  event.preventDefault();
-  event.stopPropagation();
+      deletePostBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
 
-  const label = post.title ? `"${post.title}"` : "this post";
-  const confirmed = confirm(`Are you sure you want to delete ${label}?`);
-  if (!confirmed) return;
+        const label = post.title ? `"${post.title}"` : "this post";
+        const confirmed = await showConfirm(`Are you sure you want to delete ${label}?`);
+        
+        if (!confirmed) {
+          showAlert("Post deletion cancelled", 'info');
+          return;
+        }
 
-  handleDeletePost(postId, deletePostBtn, () => {
-    window.location.hash = "#/feed";
-  });
-});
+        handleDeletePost(postId, deletePostBtn, () => {
+          window.location.hash = "#/feed";
+        });
+      });
     }
   } catch (error) {
     console.error("Error fetching single post:", error);
@@ -166,7 +139,7 @@ export async function handleEditPost(event, postId) {
   const apiKey = localStorage.getItem("apiKey");
 
   if (!title || !body) {
-    alert("Title and post text are required");
+    showAlert("Title and post text are required", 'error');
     return;
   }
 
@@ -174,7 +147,7 @@ export async function handleEditPost(event, postId) {
     try {
       new URL(imageUrl);
     } catch {
-      alert("Please enter a valid image URL");
+      showAlert("Please enter a valid image URL", 'error');
       return;
     }
   }
@@ -202,15 +175,17 @@ export async function handleEditPost(event, postId) {
     const data = await response.json();
 
     if (!response.ok) {
-      alert(`Error: ${data.errors?.[0]?.message || "Failed to update post"}`);
+      showAlert(`Error: ${data.errors?.[0]?.message || "Failed to update post"}`, 'error');
       return;
     }
 
-    alert("Post updated successfully");
-    window.location.reload();
+    showAlert("Post updated successfully", 'success');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   } catch (error) {
     console.error("Error updating post:", error);
-    alert("Failed to update post");
+    showAlert("Failed to update post", 'error');
   }
 }
 
@@ -219,7 +194,7 @@ export async function handleDeletePost(postId, deleteButton = null, onSuccess = 
   const apiKey = localStorage.getItem("apiKey");
 
   if (!accessToken || !apiKey) {
-    alert("Session expired. Please log in again.");
+    showAlert("Session expired. Please log in again.", 'error');
     window.location.hash = "#/login";
     return;
   }
@@ -247,17 +222,19 @@ export async function handleDeletePost(postId, deleteButton = null, onSuccess = 
       } catch {
         errorMessage = "Failed to delete post";
       }
-      alert(`Error (${response.status}): ${errorMessage}`);
+      showAlert(`Error (${response.status}): ${errorMessage}`, 'error');
       return;
     }
-    alert("Post deleted successfully");
-    if (onSuccess) {
-      onSuccess();
-    }
-    location.reload();
+    showAlert("Post deleted successfully", 'success');
+    setTimeout(() => {
+      if (onSuccess) {
+        onSuccess();
+      }
+      location.reload();
+    }, 1500);
   } catch (error) {
     console.error("Error deleting post:", error);
-    alert("Failed to delete post");
+    showAlert("Failed to delete post", 'error');
   } finally {
     if (deleteButton) {
       deleteButton.disabled = false;

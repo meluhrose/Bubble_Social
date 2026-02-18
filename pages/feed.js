@@ -9,6 +9,7 @@ let scrollObserver = null;
 
 import { getUserIdentity, isPostOwner } from "../main.js";
 import { handleEditPost, handleDeletePost } from "./post.js";
+import { showAlert, showConfirm } from "../utils.js";
 
 export function showFeed() {
   const app = document.getElementById("app");
@@ -92,9 +93,12 @@ function setupFeedEventListeners() {
       const postId = target.dataset.postId;
       const post = loadedPosts.find(p => p.id === postId);
       const label = post?.title ? `"${post.title}"` : "this post";
-      if (confirm(`Are you sure you want to delete ${label}?`)) {
-        handleDeletePost(postId, target);
-      }
+      
+      showConfirm(`Are you sure you want to delete ${label}?`).then(confirmed => {
+        if (confirmed) {
+          handleDeletePost(postId, target);
+        }
+      });
       return;
     }
   });
@@ -304,7 +308,7 @@ async function handleCreatePost(event) {
   const apiKey = localStorage.getItem("apiKey");
 
   if (!body.trim()) {
-    alert("Post cannot be empty");
+    showAlert("Post cannot be empty", 'error');
     return;
   }
 
@@ -312,7 +316,7 @@ async function handleCreatePost(event) {
     try {
       new URL(imageUrl);
     } catch {
-      alert("Please enter a valid image URL");
+      showAlert("Please enter a valid image URL", 'error');
       return;
     }
   }
@@ -321,6 +325,11 @@ async function handleCreatePost(event) {
     title,
     body: body.trim()
   };
+
+  if (!title) {
+    showAlert("Title cannot be empty", 'error');
+    return;
+  }
 
   if (imageUrl) {
     payload.media = {
@@ -344,12 +353,13 @@ async function handleCreatePost(event) {
     
     if (response.ok) {
       event.target.reset();
+      showAlert("Post created successfully", 'success');
       fetchAndDisplayPosts();
     } else {
-      alert(`Error: ${data.errors?.[0]?.message || 'Failed to create post'}`);
+      showAlert(`Error: ${data.errors?.[0]?.message || 'Failed to create post'}`, 'error');
     }
   } catch (error) {
     console.error("Error creating post:", error);
-    alert("Failed to create post");
+    showAlert("Failed to create post", 'error');
   }
 }
