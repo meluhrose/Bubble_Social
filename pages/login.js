@@ -9,7 +9,6 @@ export function showLogin() {
       <button type="submit">Login</button>
       <div class ="login-info">
       <p style="color: #666; font-size: 14px; margin-top: 10px;">Email must be a valid Noroff student email (@stud.noroff.no).</p>
-      <p style="color: #666; font-size: 14px; margin-top: 10px;">Don't have an account? <a href="#/register">Register here</a>.</p>
       </div>
     <div id="loginMessage" class="login-message"></div>
     </form>
@@ -18,7 +17,7 @@ export function showLogin() {
   const form = document.getElementById("loginForm");
   form.addEventListener("submit", handleLogin);
 }
-
+// Handles user login via the Noroff Auth API.
 async function handleLogin(event) {
   event.preventDefault();
   
@@ -27,7 +26,7 @@ async function handleLogin(event) {
   const password = formData.get("password");
   const messageDiv = document.getElementById("loginMessage");
 
-  console.log("Attempting login with:", { email, password: "***" });
+  messageDiv.innerHTML = "";
 
   try {
     const response = await fetch("https://v2.api.noroff.dev/auth/login", {
@@ -39,69 +38,60 @@ async function handleLogin(event) {
     });
 
     const data = await response.json();
-    console.log("Login response:", response.status, data);
 
-    if (response.ok) {
-      // Store the access token
-      localStorage.setItem("accessToken", data.data.accessToken);
-      localStorage.setItem("userName", data.data.name);
-      localStorage.setItem("userEmail", data.data.email);
-      
-      // Create API key
-      try {
-        const apiKeyResponse = await fetch("https://v2.api.noroff.dev/auth/create-api-key", {
+    // Check if login was successful
+    if (!response.ok) {
+      messageDiv.innerHTML = `
+        <p style="color: red;">
+          Invalid email or password.
+        </p>
+        <p>
+          Don't have an account?
+          <a href="#/register">Register here</a>
+        </p>
+      `;
+      return;
+    }
+    
+    // Save user data and API key to localStorage
+    localStorage.setItem("accessToken", data.data.accessToken);
+    localStorage.setItem("userName", data.data.name);
+    localStorage.setItem("userEmail", data.data.email);
+
+    
+    try {
+      const apiKeyResponse = await fetch(
+        "https://v2.api.noroff.dev/auth/create-api-key",
+        {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${data.data.accessToken}`
           },
           body: JSON.stringify({ name: "Bubble API Key" })
-        });
-        
-        const apiKeyData = await apiKeyResponse.json();
-        console.log("API key response:", apiKeyResponse.status, apiKeyData);
-        
-        if (apiKeyResponse.ok) {
-          localStorage.setItem("apiKey", apiKeyData.data.key);
-          messageDiv.innerHTML = `<p style="color: green;">Login successful! Redirecting...</p>`;
-        } 
-      } catch (apiKeyError) {
-        console.error("API key creation error:", apiKeyError);
-        messageDiv.innerHTML = `<p style="color: red;">Login successful, but failed to create API key.</p>`;
+        }
+      );
+
+      const apiKeyData = await apiKeyResponse.json();
+
+      if (apiKeyResponse.ok) {
+        localStorage.setItem("apiKey", apiKeyData.data.key);
       }
-      // Redirect to feed after successful login
-      setTimeout(() => {
-        window.location.hash = "#/feed";
-      }, 1500);
-    } else {
-      const errorMsg = data.errors?.[0]?.message || "Unknown error";
-      
-      // Check if the error indicates that the user was not found
-      const isUserNotFound = 
-        response.status === 404 || 
-        errorMsg.toLowerCase().includes("user not found");
-      
-      // Only redirect users with @stud.noroff.no emails who are not registered.
-      if (email.toLowerCase().endsWith("@stud.noroff.no") && isUserNotFound) {
-        console.log("Redirecting to registration due to user not found");
-        messageDiv.innerHTML = `
-          <p style="color: red;">
-            This email is not registered. Redirecting to registration...
-          </p>
-        `;
-        
-        setTimeout(() => {
-          window.location.hash = "#/register";
-        }, 2000);
-      } else {
-        // For all other errors, show the error message without redirecting
-        messageDiv.innerHTML = `<p style="color: red;">${errorMsg}</p>`;
-      }
-      
-      console.error("Login failed:", data.errors);
+
+    } catch (apiKeyError) {
+      console.error("API key creation error:", apiKeyError);
     }
+
+    messageDiv.innerHTML =
+      `<p style="color: green;">Login successful! Redirecting...</p>`;
+
+    setTimeout(() => {
+      window.location.hash = "#/feed";
+    }, 1500);
+
   } catch (error) {
-    messageDiv.innerHTML = `<p style="color: red;">Login failed. Please try again.</p>`;    
+    messageDiv.innerHTML =
+      `<p style="color: red;">Login failed. Please try again.</p>`;
     console.error("Login error:", error);
   }
 }
