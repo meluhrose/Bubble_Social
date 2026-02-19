@@ -47,8 +47,6 @@ async function handleRegister(event) {
   }
 
   try {
-    console.log("Attempting registration with:", { name, email, password: "***" });
-    
     const response = await fetch("https://v2.api.noroff.dev/auth/register", {
       method: "POST",
       headers: {
@@ -58,7 +56,6 @@ async function handleRegister(event) {
     });
 
     const data = await response.json();
-    console.log("Registration response:", response.status, data);
 
     if (!response.ok) {
       const errorMessage = data.errors?.[0]?.message || "Registration failed";

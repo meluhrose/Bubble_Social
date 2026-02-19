@@ -26,6 +26,15 @@ export function router() {
     return;
   }
 
+  if (hash.startsWith("#/logout")) {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("apiKey");
+    window.location.hash = "#/homepage";
+    return;
+  }
+
   //Protected routes that require authentication
   if (!isLoggedIn) {
     window.location.hash = "#/login";
@@ -41,12 +50,4 @@ export function router() {
   } else {
     showHomepage();
   }
-
-  if (hash.startsWith("#/logout")) {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userEmail");
-    localStorage.removeItem("apiKey");
-    window.location.hash = "#/homepage";
-}
 }
