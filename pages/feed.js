@@ -11,6 +11,19 @@ import { getUserIdentity, isPostOwner } from "../main.js";
 import { handleEditPost, handleDeletePost } from "./post.js";
 import { showAlert, showConfirm } from "../utils.js";
 
+function resetFeedState() {
+  loadedPosts = [];
+  currentSearchTerm = "";
+  currentPage = 1;
+  hasMorePages = true;
+  isLoadingPosts = false;
+
+  if (scrollObserver) {
+    scrollObserver.disconnect();
+    scrollObserver = null;
+  }
+}
+
 export function showFeed() {
   const app = document.getElementById("app");
 
@@ -36,6 +49,7 @@ export function showFeed() {
   `;
 
   // handle feed here
+  resetFeedState();
   fetchAndDisplayPosts();
   setupInfiniteScroll();
   setupFeedEventListeners();
