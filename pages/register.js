@@ -11,12 +11,12 @@ export function showRegister() {
       <input name="email" type="email" placeholder="Email (@stud.noroff.no)" required />
       <input name="password" type="password" placeholder="Password (min 8 chars)" required />
       <button type="submit">Register</button>
-    </form>
-    <p style="color: #666; font-size: 14px; margin-top: 10px;">
+      <p style="color: #666; font-size: 14px; margin-top: 10px;">
       Use your own @stud.noroff.no email to create an account.
     </p>
     <div id="registerMessage"></div>
-  `;
+    </form>
+      `;
 
   const form = document.getElementById("registerForm");
   form.addEventListener("submit", handleRegister);
