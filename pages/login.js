@@ -7,8 +7,10 @@ export function showLogin() {
       <input id="emailInput" name="email" placeholder="Email" required />
       <input id="passwordInput" name="password" type="password" placeholder="Password" required />
       <button type="submit">Login</button>
-      <p style="color: #666; font-size: 14px; margin-top: 10px;">Use the email and password you registered with.</p>
+      <div class ="login-info">
+      <p style="color: #666; font-size: 14px; margin-top: 10px;">Email must be a valid Noroff student email (@stud.noroff.no).</p>
       <p style="color: #666; font-size: 14px; margin-top: 10px;">Don't have an account? <a href="#/register">Register here</a>.</p>
+      </div>
     <div id="loginMessage" class="login-message"></div>
     </form>
       `;
@@ -19,12 +21,6 @@ export function showLogin() {
 
 async function handleLogin(event) {
   event.preventDefault();
-  
-  // Check if user is on the login page
-  if (!window.location.hash.startsWith("#/login")) {
-    window.location.hash = "#/register";
-    return;
-  }
   
   const formData = new FormData(event.target);
   const email = formData.get("email");
@@ -68,22 +64,40 @@ async function handleLogin(event) {
         if (apiKeyResponse.ok) {
           localStorage.setItem("apiKey", apiKeyData.data.key);
           messageDiv.innerHTML = `<p style="color: green;">Login successful! Redirecting...</p>`;
-        } else {
-          messageDiv.innerHTML = `<p style="color: orange;">Login successful but API key creation failed. ${apiKeyData.errors?.[0]?.message || ''}</p>`;
-          console.error("API key creation failed:", apiKeyData);
-        }
+        } 
       } catch (apiKeyError) {
         console.error("API key creation error:", apiKeyError);
-        messageDiv.innerHTML = `<p style="color: orange;">Login successful but API key creation failed. ${apiKeyError.message}</p>`;
+        messageDiv.innerHTML = `<p style="color: red;">Login successful, but failed to create API key.</p>`;
       }
-      
       // Redirect to feed after successful login
       setTimeout(() => {
         window.location.hash = "#/feed";
       }, 1500);
     } else {
       const errorMsg = data.errors?.[0]?.message || "Unknown error";
-      messageDiv.innerHTML = `<p style="color: red;">Error: ${errorMsg}</p>`;
+      
+      // Check if the error indicates that the user was not found
+      const isUserNotFound = 
+        response.status === 404 || 
+        errorMsg.toLowerCase().includes("user not found");
+      
+      // Only redirect users with @stud.noroff.no emails who are not registered.
+      if (email.toLowerCase().endsWith("@stud.noroff.no") && isUserNotFound) {
+        console.log("Redirecting to registration due to user not found");
+        messageDiv.innerHTML = `
+          <p style="color: red;">
+            This email is not registered. Redirecting to registration...
+          </p>
+        `;
+        
+        setTimeout(() => {
+          window.location.hash = "#/register";
+        }, 2000);
+      } else {
+        // For all other errors, show the error message without redirecting
+        messageDiv.innerHTML = `<p style="color: red;">${errorMsg}</p>`;
+      }
+      
       console.error("Login failed:", data.errors);
     }
   } catch (error) {
