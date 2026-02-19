@@ -41,4 +41,12 @@ export function router() {
   } else {
     showHomepage();
   }
+
+  if (hash.startsWith("#/logout")) {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("apiKey");
+    window.location.hash = "#/homepage";
+}
 }

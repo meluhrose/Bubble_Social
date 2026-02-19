@@ -7,10 +7,11 @@ export function showLogin() {
       <input id="emailInput" name="email" placeholder="Email" required />
       <input id="passwordInput" name="password" type="password" placeholder="Password" required />
       <button type="submit">Login</button>
-    </form>
-    <p style="color: #666; font-size: 14px; margin-top: 10px;">Use the email and password you registered with.</p>
+      <p style="color: #666; font-size: 14px; margin-top: 10px;">Use the email and password you registered with.</p>
+      <p style="color: #666; font-size: 14px; margin-top: 10px;">Don't have an account? <a href="#/register">Register here</a>.</p>
     <div id="loginMessage" class="login-message"></div>
-  `;
+    </form>
+      `;
 
   const form = document.getElementById("loginForm");
   form.addEventListener("submit", handleLogin);
