@@ -52,7 +52,6 @@ async function fetchAndDisplaySinglePost(postId) {
     });
 
     const data = await response.json();
-    console.log("Single post response:", data);
 
     if (!response.ok) {
       postDiv.innerHTML = `<p style="color: red;">Error: ${data.errors?.[0]?.message || 'Failed to load post'}</p>`;

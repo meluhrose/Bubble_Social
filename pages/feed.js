@@ -1,4 +1,5 @@
 const postsPerPage = 15;
+let isEditingPost = false;
 let loadedPosts = [];
 let currentSearchTerm = "";
 let currentUserIdentity = { name: "", email: "" };
@@ -94,12 +95,25 @@ function setupFeedEventListeners() {
       const form = feedDiv.querySelector(`.edit-post-form[data-post-id="${postId}"]`);
       if (form) {
         const isHidden = form.style.display === "none";
-        form.style.display = isHidden ? "flex" : "none";
-        target.textContent = isHidden ? "Cancel" : "Edit Post";
+        if (isHidden) {
+
+          form.style.display = "flex";
+          target.textContent = "Cancel";
+          isEditingPost = true;
+
+          if(scrollObserver) {
+            scrollObserver.disconnect();
+          }
+        } else {
+          form.style.display = "none";
+          target.textContent = "Edit Post";
+          isEditingPost = false;
+          setupInfiniteScroll();
+        }
       }
       return;
     }
-    
+  
     // Handle delete button clicks
     if (target.classList.contains("delete-post-btn")) {
       event.preventDefault();
@@ -251,7 +265,7 @@ async function loadMorePosts() {
   const accessToken = localStorage.getItem("accessToken");
   const apiKey = localStorage.getItem("apiKey");
 
-  if (isLoadingPosts || !hasMorePages) {
+  if (isLoadingPosts || !hasMorePages || isEditingPost) {
     return;
   }
   
@@ -262,8 +276,6 @@ async function loadMorePosts() {
 
   isLoadingPosts = true;
   
-  console.log("Fetching posts with API key:", apiKey ? "Present" : "Missing");
-  
   try {
     const response = await fetch(`https://v2.api.noroff.dev/social/posts?limit=${postsPerPage}&page=${currentPage}&_author=true&sort=created&sortOrder=desc`, {
       headers: {
@@ -272,7 +284,6 @@ async function loadMorePosts() {
       }
     });
     const data = await response.json();
-    console.log("API Response:", response.status, data);
 
     if (!response.ok) {
       if (feedDiv) {
