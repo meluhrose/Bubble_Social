@@ -14,6 +14,36 @@ import { handleEditPost, handleDeletePost } from "./post.js";
 import { showAlert, showConfirm, updateLoadingStatus, postMatchesSearch } from "../src/utils.js";
 import { fetchPostsPage, fetchPostsForSearch, createPost } from "../src/api.js";
 
+// Function to update navbar with links
+function updateNavbar() {
+  const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
+  const nav = document.querySelector("nav");
+  const navUl = document.querySelector("nav ul");
+  
+  if (navUl) {
+    navUl.innerHTML = `
+      ${isLoggedIn ? `
+        <li><a href="#/feed">Feed</a></li>
+        <li><a href="#/profile">Profile</a></li>
+        <li><a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i></a></li>
+      ` : ``}
+    `;
+
+    const logoutLink = document.getElementById("logoutLink");
+    if (logoutLink) {
+      logoutLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("apiKey");
+        window.location.hash = "#/login";
+        updateNavbar();
+      });
+    }
+  }
+}
+
 function resetFeedState() {
   loadedPosts = [];
   currentSearchTerm = "";
@@ -30,6 +60,10 @@ function resetFeedState() {
 
 export function showFeed() {
   const app = document.getElementById("app");
+  const nav = document.querySelector("nav");
+  
+  if (nav) nav.style.display = "block";
+  updateNavbar();
 
   app.innerHTML = `
  <h1>Feed</h1>

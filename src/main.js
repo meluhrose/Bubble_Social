@@ -10,26 +10,28 @@ function updateNavbar() {
     nav.style.display = isLoggedIn ? "block" : "none";
   }
   
-  navUl.innerHTML = `
-    ${isLoggedIn ? `
-      <li><a href="#/feed">Feed</a></li>
-      <li><a href="#/profile">Profile</a></li>
-      <li><a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i></a></li>
-    ` : ``}
-  `;
+  if (navUl) {
+    navUl.innerHTML = `
+      ${isLoggedIn ? `
+        <li><a href="#/feed">Feed</a></li>
+        <li><a href="#/profile">Profile</a></li>
+        <li><a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i></a></li>
+      ` : ``}
+    `;
 
-  // Add logout functionality
-  const logoutLink = document.getElementById("logoutLink");
-  if (logoutLink) {
-    logoutLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("userName");
-      localStorage.removeItem("userEmail");
-      localStorage.removeItem("apiKey");
-      router();
-      updateNavbar();
-    });
+    // Add logout functionality
+    const logoutLink = document.getElementById("logoutLink");
+    if (logoutLink) {
+      logoutLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userEmail");
+        localStorage.removeItem("apiKey");
+        router();
+        updateNavbar();
+      });
+    }
   }
 }
 
