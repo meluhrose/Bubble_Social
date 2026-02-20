@@ -76,7 +76,10 @@ export function showFeed() {
       <button type="submit">Post</button>
     </form>
 
-    <input id="feedSearchInput" type="search" placeholder="Search posts..." class="create-post-form" />
+    <div class="search-container">
+      <input id="feedSearchInput" type="search" placeholder="Search posts..." class="create-post-form" />
+      <button id="clearSearchBtn" type="button" style="display: none;">Clear</button>
+    </div>
    
     <div id="feed" class="feed-container">
       <p>Loading posts...</p>
