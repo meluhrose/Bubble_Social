@@ -32,7 +32,7 @@ Bubble is a social media application where users can create posts, manage their 
 - CSS
 - Noroff Social API v2
 - Font Awesome icons
-- Google Font (Roboto Condensed)
+- Google Font (Bagel Fat One & Roboto Condensed)
 
 ## Getting Started⭐
 
