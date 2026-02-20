@@ -3,11 +3,9 @@
 Bubble is a functional front-end social media application.
 <br>
 <br>
-<img width="600" height="600" alt="bubble homepage in a state a user is not logged in" src="https://github.com/user-attachments/assets/4ba6ab16-e0b5-4cce-8f3c-070db18d90e5" />
+<img width="600" height="600" alt="First page when a user is not logged in to Bubble" src="https://github.com/user-attachments/assets/fe156c06-ebf6-4aa0-8c9c-849d12f61399" />
 <br>
-<img width="600" height="600" alt="bubble profile page" src="https://github.com/user-attachments/assets/28144432-fa65-4242-a99c-d93bce1cd53d" />
-<br>
-<img width="600" height="600" alt="bubble feed page during search" src="https://github.com/user-attachments/assets/41c199f5-9647-4b20-accb-f3c5f6fa1237" />
+<img width="600" height="600" alt="Profile side for logged in users" src="https://github.com/user-attachments/assets/94fd4852-735f-4710-9e11-08a423d8503c" />
 
 ## Description
 
