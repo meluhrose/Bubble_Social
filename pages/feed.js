@@ -391,6 +391,7 @@ async function handleCreatePost(event) {
   event.target.reset();
   showAlert("Post created successfully", "success");
   fetchAndDisplayPosts();
+  updateNavbar();
 
 } catch (error) {
   showAlert(error.message, "error");
