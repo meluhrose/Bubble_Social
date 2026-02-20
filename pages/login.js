@@ -1,7 +1,16 @@
 export function showLogin() {
   const app = document.getElementById("app");
+  const nav = document.querySelector("nav");
+  
+  if (nav) nav.style.display = "none";
 
   app.innerHTML = `
+
+  <div class="about-info">
+    <h1>Welcome to Bubble!</h1>
+    <p>Here you can connect with others, share your thoughts, and stay updated with the latest news. To get started, please log in with your Noroff student email.</p>
+  </div>
+  <div class="login-wrapper">
     <h1>Login</h1>
     <form id="loginForm" class="login-form">
       <input id="emailInput" name="email" placeholder="Email" required />
@@ -9,9 +18,11 @@ export function showLogin() {
       <button type="submit">Login</button>
       <div class ="login-info">
       <p style="color: #666; font-size: 14px; margin-top: 10px;">Email must be a valid Noroff student email (@stud.noroff.no).</p>
+      <p>Don't have an account? <a href="#/register">Register here</a>.</p>
       </div>
     <div id="loginMessage" class="login-message"></div>
     </form>
+    </div>
       `;
 
   const form = document.getElementById("loginForm");
@@ -19,7 +30,6 @@ export function showLogin() {
 }
 
 import { loginUser, createApiKey } from "../src/auth.js";
-import { showAlert } from "../src/utils.js";
 
 // Handles user login via the Noroff Auth API.
 async function handleLogin(event) {
@@ -57,11 +67,7 @@ async function handleLogin(event) {
   } catch (error) {
     messageDiv.innerHTML = `
       <p style="color: red;">
-        Invalid email or password.
-      </p>
-      <p>
-        Don't have an account?
-        <a href="#/register">Register here</a>
+        Invalid email or password. Please try again.
       </p>
     `;
     console.error("Login error:", error);

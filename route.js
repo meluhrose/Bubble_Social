@@ -1,4 +1,3 @@
-import { showHomepage } from "./pages/homepage.js";
 import { showLogin } from "./pages/login.js";
 import { showRegister } from "./pages/register.js";
 import { showFeed } from "./pages/feed.js";
@@ -6,15 +5,11 @@ import { showPost } from "./pages/post.js";
 import { showProfile } from "./pages/profile.js";
 
 export function router() {
-  const hash = window.location.hash || "#/homepage";
+  const hash = window.location.hash || "#/login";
   const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
 
   //Public routes that don't require authentication
 
-    if (hash.startsWith("#/homepage")) {
-    showHomepage();
-    return;
-  }
   
   if (hash.startsWith("#/login")) {
     showLogin();
@@ -31,7 +26,7 @@ export function router() {
     localStorage.removeItem("userName");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("apiKey");
-    window.location.hash = "#/homepage";
+    window.location.hash = "#/login";
     return;
   }
 
@@ -48,6 +43,6 @@ export function router() {
   } else if (hash.startsWith("#/profile")) {
     showProfile();
   } else {
-    showHomepage();
+    window.location.hash = "#/login";
   }
 }

@@ -1,14 +1,13 @@
-/**
- * Renders the registration page and attaches event listeners.
- */
-
 import { registerUser } from "../src/auth.js";
-import { showAlert } from "../src/utils.js";
 
 export function showRegister() {
   const app = document.getElementById("app");
+  const nav = document.querySelector("nav");
+  
+  if (nav) nav.style.display = "none";
 
   app.innerHTML = `
+  <div class="register-wrapper">
     <h1>Register</h1>
     <form id="registerForm" class="register-form">
       <input name="name" type="text" placeholder="Username" required />
@@ -18,8 +17,10 @@ export function showRegister() {
       <p style="color: #666; font-size: 14px; margin-top: 10px;">
       Use your own @stud.noroff.no email to create an account.
     </p>
+    <p>Already have an account? <a href="#/login">Login here</a>.</p>
     <div id="registerMessage"></div>
     </form>
+    </div>
       `;
 
   const form = document.getElementById("registerForm");
@@ -61,7 +62,7 @@ async function handleRegister(event) {
 
     setTimeout(() => {
       window.location.hash = "#/login";
-    }, 1000);
+    }, 1500);
 
   } catch (error) {
     const errorMessage = error.message || "Registration failed";

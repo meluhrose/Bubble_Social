@@ -2,17 +2,20 @@ import { router } from "../route.js";
 
 function updateNavbar() {
   const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
-  const nav = document.querySelector("nav ul");
-  nav.innerHTML = `
-    <li><a href="#/homepage">Home</a></li>
+  const nav = document.querySelector("nav");
+  const navUl = document.querySelector("nav ul");
+  
+  // Show nav when logged in, hide when not
+  if (nav) {
+    nav.style.display = isLoggedIn ? "block" : "none";
+  }
+  
+  navUl.innerHTML = `
     ${isLoggedIn ? `
       <li><a href="#/feed">Feed</a></li>
       <li><a href="#/profile">Profile</a></li>
-      <li><a href="#" id="logoutLink">Logout</a></li>
-    ` : `
-      <li><a href="#/login">Login</a></li>
-      <li><a href="#/register">Register</a></li>
-    `}
+      <li><a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i></a></li>
+    ` : ``}
   `;
 
   // Add logout functionality
@@ -22,7 +25,10 @@ function updateNavbar() {
       e.preventDefault();
       localStorage.removeItem("accessToken");
       localStorage.removeItem("userName");
-      window.location.hash = "#/homepage";
+      localStorage.removeItem("userEmail");
+      localStorage.removeItem("apiKey");
+      router();
+      updateNavbar();
     });
   }
 }

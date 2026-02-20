@@ -184,6 +184,10 @@ if (followBtn) {
       await updateProfile(userName, payload);
 
       showAlert("Profile updated successfully", "success");
+      
+      // Hide the form and reset button
+      editProfileForm.style.display = "none";
+      editProfileBtn.textContent = "Edit profile";
 
       setTimeout(() => {
         window.location.hash = `#/profile/${userName}`;

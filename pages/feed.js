@@ -9,7 +9,7 @@ let isLoadingPosts = false;
 let scrollObserver = null;
 let feedListenersAttached = false;
 
-import { getUserIdentity, isPostOwner, normalizeIdentity } from "../src/main.js";
+import { getUserIdentity, isPostOwner} from "../src/main.js";
 import { handleEditPost, handleDeletePost } from "./post.js";
 import { showAlert, showConfirm, updateLoadingStatus, postMatchesSearch } from "../src/utils.js";
 import { fetchPostsPage, fetchPostsForSearch, createPost } from "../src/api.js";
@@ -43,7 +43,7 @@ export function showFeed() {
     </form>
 
     <input id="feedSearchInput" type="search" placeholder="Search posts..." class="create-post-form" />
-
+   
     <div id="feed" class="feed-container">
       <p>Loading posts...</p>
     </div>
@@ -62,7 +62,7 @@ export function showFeed() {
   const createPostForm = document.getElementById("createPostForm");
   createPostForm.addEventListener("submit", handleCreatePost);
 
-  const searchInput = document.getElementById("feedSearchInput");
+  const searchInput = document.getElementById("feedSearchInput");  const clearSearchBtn = document.getElementById("clearSearchBtn");
 
   searchInput.addEventListener("input", async (event) => {
     currentSearchTerm = event.target.value.trim().toLowerCase();
@@ -80,6 +80,15 @@ export function showFeed() {
       fetchAndDisplayPosts();
       setupInfiniteScroll();
     }
+  });
+
+  clearSearchBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    clearSearchBtn.style.display = "none";
+    currentSearchTerm = "";
+    resetFeedState();
+    fetchAndDisplayPosts();
+    setupInfiniteScroll();
   });
 }
 
