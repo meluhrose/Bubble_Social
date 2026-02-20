@@ -9,9 +9,10 @@ let isLoadingPosts = false;
 let scrollObserver = null;
 let feedListenersAttached = false;
 
-import { getUserIdentity, isPostOwner } from "../main.js";
+import { getUserIdentity, isPostOwner, normalizeIdentity } from "../src/main.js";
 import { handleEditPost, handleDeletePost } from "./post.js";
-import { showAlert, showConfirm } from "../utils.js";
+import { showAlert, showConfirm, updateLoadingStatus, postMatchesSearch } from "../src/utils.js";
+import { fetchPostsPage, fetchPostsForSearch, createPost } from "../src/api.js";
 
 function resetFeedState() {
   loadedPosts = [];
@@ -63,23 +64,23 @@ export function showFeed() {
 
   const searchInput = document.getElementById("feedSearchInput");
 
-  searchInput.addEventListener("input", (event) => {
+  searchInput.addEventListener("input", async (event) => {
     currentSearchTerm = event.target.value.trim().toLowerCase();
 
     if (currentSearchTerm) {
+      // Disable infinite scroll during search
       if (scrollObserver) {
         scrollObserver.disconnect();
       }
+      // Load all posts for searching
+      await loadAllPostsForSearch();
     } else {
+      // Re-enable infinite scroll when search is cleared
+      resetFeedState();
+      fetchAndDisplayPosts();
       setupInfiniteScroll();
     }
-
-    updateFeedDisplay();
   });
-}
-
-function normalizeSearchValue(value) {
-  return (value || "").toString().trim().toLowerCase();
 }
 
 function setupFeedEventListeners() {
@@ -154,7 +155,7 @@ function setupFeedEventListeners() {
   });
 }
 
-function setUpInfiniteScroll() {
+function setupInfiniteScroll() {
   const trigger = document.getElementById("feedLoadMoreTrigger");
   if (!trigger || isEditingPost) return;
 
@@ -173,30 +174,7 @@ function setUpInfiniteScroll() {
     rootMargin: " 300px 0px",
     threshold: 0.1
   });
-}
-scrollObserver.observe(trigger);
-
-
-function updateLoadingStatus(message) {
-  const status = document.getElementById("feedLoadingStatus");
-  if (!status) return;
-  status.textContent = message || "";
-}
-
-function postMatchesSearch(post, searchTerm) {
-  if (!searchTerm) return true;
-
-  const searchableValues = [
-    post.title,
-    post.body,
-    post.author?.name,
-    post.author?.email,
-    post.media?.alt
-  ];
-
-  return searchableValues.some((value) =>
-    normalizeSearchValue(value).includes(searchTerm)
-  );
+  scrollObserver.observe(trigger);
 }
 
 function renderPosts(posts, searchTerm = "") {
@@ -263,8 +241,22 @@ function renderPosts(posts, searchTerm = "") {
 }
 
 function updateFeedDisplay() {
-  const filteredPosts = loadedPosts.filter((post) => postMatchesSearch(post, currentSearchTerm));
+  const filteredPosts = loadedPosts.filter(post => postMatchesSearch(post, currentSearchTerm));
   renderPosts(filteredPosts, currentSearchTerm);
+}
+
+async function loadAllPostsForSearch() {
+  try {
+    const posts = await fetchPostsForSearch(100);
+
+    loadedPosts = posts;
+    currentUserIdentity = getUserIdentity(localStorage.getItem("accessToken"));
+
+    updateFeedDisplay();
+
+  } catch (error) {
+    showAlert(error.message, "error");
+  }
 }
 
 async function fetchAndDisplayPosts() {
@@ -283,60 +275,25 @@ async function fetchAndDisplayPosts() {
 
 
 async function loadMorePosts() {
-  const feedDiv = document.getElementById("feed");
-  const accessToken = localStorage.getItem("accessToken");
-  const apiKey = localStorage.getItem("apiKey");
-
-  if (isLoadingPosts || !hasMorePages || isEditingPost) {
-    return;
-  }
-  
-  if (!accessToken || !apiKey) {
-    window.location.hash = "#/login";
-    return;
-  }
+  if (isLoadingPosts || !hasMorePages || isEditingPost) return;
 
   isLoadingPosts = true;
-  
-  try {
-    const response = await fetch(`https://v2.api.noroff.dev/social/posts?limit=${postsPerPage}&page=${currentPage}&_author=true&sort=created&sortOrder=desc`, {
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Noroff-API-Key": apiKey
-      }
-    });
-    const data = await response.json();
 
-    if (!response.ok) {
-      if (feedDiv) {
-        feedDiv.innerHTML = `<p style="color: red;">Error fetching posts: ${data.errors?.[0]?.message || "Unknown error"}</p>`;
-      } 
-      updateLoadingStatus("");
-      return;
-    }
+  try {
+    const data = await fetchPostsPage(currentPage, postsPerPage);
 
     const newPosts = data.data || [];
     loadedPosts.push(...newPosts);
 
     hasMorePages = data.meta ? !data.meta.isLastPage : false;
-    if (hasMorePages) {
-      currentPage += 1;
-    }
+    if (hasMorePages) currentPage++;
 
-    currentUserIdentity = getUserIdentity(accessToken);
+    currentUserIdentity = getUserIdentity(localStorage.getItem("accessToken"));
     updateFeedDisplay();
 
-    if (hasMorePages) {
-      updateLoadingStatus("Scroll down to load 15 more posts...");
-    } else {
-      updateLoadingStatus("All posts loaded");
-    }
   } catch (error) {
-    console.error("Error fetching posts:", error);
-    if (feedDiv) {
-      feedDiv.innerHTML = `<p style="color: red;">An error occurred: ${error.message}</p>`;
-    }
-    updateLoadingStatus("");
+    console.error(error);
+    showAlert(error.message, "error");
   } finally {
     isLoadingPosts = false;
   }
@@ -386,27 +343,13 @@ async function handleCreatePost(event) {
   }
 
   try {
-    const response = await fetch("https://v2.api.noroff.dev/social/posts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Noroff-API-Key": apiKey
-      },
-      body: JSON.stringify(payload)
-    });
+  await createPost(payload);
 
-    const data = await response.json();
-    
-    if (response.ok) {
-      event.target.reset();
-      showAlert("Post created successfully", 'success');
-      fetchAndDisplayPosts();
-    } else {
-      showAlert(`Error: ${data.errors?.[0]?.message || 'Failed to create post'}`, 'error');
-    }
-  } catch (error) {
-    console.error("Error creating post:", error);
-    showAlert("Failed to create post", 'error');
-  }
+  event.target.reset();
+  showAlert("Post created successfully", "success");
+  fetchAndDisplayPosts();
+
+} catch (error) {
+  showAlert(error.message, "error");
+}
 }

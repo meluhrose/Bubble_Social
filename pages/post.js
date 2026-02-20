@@ -1,5 +1,6 @@
-import { showAlert, showConfirm } from "../utils.js";
-import { getUserIdentity, isPostOwner } from "../main.js";
+import { showAlert, showConfirm } from "../src/utils.js";
+import { getUserIdentity, isPostOwner } from "../src/main.js";
+import { fetchSinglePost, updatePost, deletePost } from "../src/api.js";
 
 export function showPost() {
   const app = document.getElementById("app");
@@ -44,21 +45,9 @@ async function fetchAndDisplaySinglePost(postId) {
   }
 
   try {
-    const response = await fetch(`https://v2.api.noroff.dev/social/posts/${postId}?_author=true`, {
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Noroff-API-Key": apiKey
-      }
-    });
+    const post = await fetchSinglePost(postId);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      postDiv.innerHTML = `<p style="color: red;">Error: ${data.errors?.[0]?.message || 'Failed to load post'}</p>`;
-      return;
-    }
-    const post = data.data;
-    const userIdentity = getUserIdentity(accessToken);
+    const userIdentity = getUserIdentity(localStorage.getItem("accessToken"));
     const canEdit = isPostOwner(post, userIdentity);
 
     postDiv.innerHTML = `
@@ -161,22 +150,7 @@ export async function handleEditPost(event, postId) {
   }
 
   try {
-    const response = await fetch(`https://v2.api.noroff.dev/social/posts/${postId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Noroff-API-Key": apiKey
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      showAlert(`Error: ${data.errors?.[0]?.message || "Failed to update post"}`, 'error');
-      return;
-    }
+    await updatePost(postId, payload);
 
     showAlert("Post updated successfully", 'success');
     setTimeout(() => {
@@ -205,30 +179,12 @@ export async function handleDeletePost(postId, deleteButton = null, onSuccess = 
   }
 
   try {
-    const response = await fetch(`https://v2.api.noroff.dev/social/posts/${postId}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Noroff-API-Key": apiKey
-      }
-    });
+    await deletePost(postId);
 
-    if (!response.ok) {
-      let errorMessage = "Failed to delete post";
-      try {
-        const data = await response.json();
-        errorMessage = data.errors?.[0]?.message || errorMessage;
-      } catch {
-        errorMessage = "Failed to delete post";
-      }
-      showAlert(`Error (${response.status}): ${errorMessage}`, 'error');
-      return;
-    }
-    showAlert("Post deleted successfully", 'success');
+    showAlert("Post deleted successfully", "success");
+
     setTimeout(() => {
-      if (onSuccess) {
-        onSuccess();
-      }
+      if (onSuccess) onSuccess();
       location.reload();
     }, 1500);
   } catch (error) {

@@ -1,5 +1,7 @@
 // Shared utility functions for the application
 
+import { normalizeIdentity } from "./main.js";
+
 /**
  * Shows a styled alert message that auto-dismisses after 4 seconds
  * @param {string} message - The message to display
@@ -66,4 +68,28 @@ export function showConfirm(message) {
       }
     });
   });
+}
+
+
+export function updateLoadingStatus(message, elementId = "feedLoadingStatus") {
+  const status = document.getElementById(elementId);
+  if (!status) return;
+  status.textContent = message || "";
+}
+
+
+export function postMatchesSearch(post, searchTerm) {
+  if (!searchTerm) return true;
+
+  const searchableValues = [
+    post.title,
+    post.body,
+    post.author?.name,
+    post.author?.email,
+    post.media?.alt
+  ];
+
+  return searchableValues.some((value) =>
+    normalizeIdentity(value).includes(searchTerm)
+  );
 }

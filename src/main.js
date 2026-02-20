@@ -1,4 +1,4 @@
-import { router } from "./route.js";
+import { router } from "../route.js";
 
 function updateNavbar() {
   const isLoggedIn = Boolean(localStorage.getItem("accessToken"));

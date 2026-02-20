@@ -17,6 +17,10 @@ export function showLogin() {
   const form = document.getElementById("loginForm");
   form.addEventListener("submit", handleLogin);
 }
+
+import { loginUser, createApiKey } from "../src/auth.js";
+import { showAlert } from "../src/utils.js";
+
 // Handles user login via the Noroff Auth API.
 async function handleLogin(event) {
   event.preventDefault();
@@ -29,55 +33,16 @@ async function handleLogin(event) {
   messageDiv.innerHTML = "";
 
   try {
-    const response = await fetch("https://v2.api.noroff.dev/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ email, password })
-    });
+    const data = await loginUser(email, password);
 
-    const data = await response.json();
+    // Save user data to localStorage
+    localStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("userName", data.name);
+    localStorage.setItem("userEmail", data.email);
 
-    // Check if login was successful
-    if (!response.ok) {
-      messageDiv.innerHTML = `
-        <p style="color: red;">
-          Invalid email or password.
-        </p>
-        <p>
-          Don't have an account?
-          <a href="#/register">Register here</a>
-        </p>
-      `;
-      return;
-    }
-    
-    // Save user data and API key to localStorage
-    localStorage.setItem("accessToken", data.data.accessToken);
-    localStorage.setItem("userName", data.data.name);
-    localStorage.setItem("userEmail", data.data.email);
-
-    
     try {
-      const apiKeyResponse = await fetch(
-        "https://v2.api.noroff.dev/auth/create-api-key",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${data.data.accessToken}`
-          },
-          body: JSON.stringify({ name: "Bubble API Key" })
-        }
-      );
-
-      const apiKeyData = await apiKeyResponse.json();
-
-      if (apiKeyResponse.ok) {
-        localStorage.setItem("apiKey", apiKeyData.data.key);
-      }
-
+      const apiKey = await createApiKey(data.accessToken);
+      localStorage.setItem("apiKey", apiKey);
     } catch (apiKeyError) {
       console.error("API key creation error:", apiKeyError);
     }
@@ -90,8 +55,15 @@ async function handleLogin(event) {
     }, 1500);
 
   } catch (error) {
-    messageDiv.innerHTML =
-      `<p style="color: red;">Login failed. Please try again.</p>`;
+    messageDiv.innerHTML = `
+      <p style="color: red;">
+        Invalid email or password.
+      </p>
+      <p>
+        Don't have an account?
+        <a href="#/register">Register here</a>
+      </p>
+    `;
     console.error("Login error:", error);
   }
 }

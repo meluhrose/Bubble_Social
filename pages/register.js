@@ -1,6 +1,10 @@
 /**
  * Renders the registration page and attaches event listeners.
  */
+
+import { registerUser } from "../src/auth.js";
+import { showAlert } from "../src/utils.js";
+
 export function showRegister() {
   const app = document.getElementById("app");
 
@@ -47,33 +51,7 @@ async function handleRegister(event) {
   }
 
   try {
-    const response = await fetch("https://v2.api.noroff.dev/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ name, email, password })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const errorMessage = data.errors?.[0]?.message || "Registration failed";
-      
-      // Check if it's a "profile already exists" error
-      if (errorMessage.toLowerCase().includes("profile") && errorMessage.toLowerCase().includes("exist")) {
-        messageDiv.innerHTML = `
-          <p style="color: red;">
-            This email is already registered. 
-            <a href="#/login" style="color: blue; text-decoration: underline;">Go to login</a>
-          </p>
-        `;
-      } else {
-        messageDiv.innerHTML = `<p style="color: red;">${errorMessage}</p>`;
-        console.error("Registration error:", data.errors);
-      }
-      return;
-    }
+    await registerUser(name, email, password);
 
     messageDiv.innerHTML = `
       <p style="color: green;">
@@ -86,7 +64,19 @@ async function handleRegister(event) {
     }, 1000);
 
   } catch (error) {
-    messageDiv.innerHTML = `<p style="color: red;">${error.message}</p>`;
+    const errorMessage = error.message || "Registration failed";
+    
+    // Check if it's a "profile already exists" error
+    if (errorMessage.toLowerCase().includes("profile") && errorMessage.toLowerCase().includes("exist")) {
+      messageDiv.innerHTML = `
+        <p style="color: red;">
+          This email is already registered. 
+          <a href="#/login" style="color: blue; text-decoration: underline;">Go to login</a>
+        </p>
+      `;
+    } else {
+      messageDiv.innerHTML = `<p style="color: red;">${errorMessage}</p>`;
+    }
     console.error("Registration error:", error);
   }
 }

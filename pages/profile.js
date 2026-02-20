@@ -1,4 +1,5 @@
-import { showAlert } from "../utils.js";
+import { showAlert } from "../src/utils.js";
+import {fetchProfile, updateProfile, followUser, unfollowUser} from "../src/api.js";
 
 export function showProfile() {
   const app = document.getElementById("app");
@@ -35,26 +36,10 @@ async function fetchAndDisplayProfile(profileUsername = null) {
   const targetUsername = profileUsername || currentUserName;
 
   try {
-    const response = await fetch(
-      `https://v2.api.noroff.dev/social/profiles/${targetUsername}?_posts=true&_followers=true&_following=true`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "X-Noroff-API-Key": apiKey
-        }
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      profileDiv.innerHTML = `<p>Error loading profile</p>`;
-      return;
-    }
-
-    renderProfile(data.data, currentUserName);
+    const profile = await fetchProfile(targetUsername);
+    renderProfile(profile, currentUserName);
   } catch (error) {
-    profileDiv.innerHTML = `<p>Something went wrong</p>`;
+    profileDiv.innerHTML = `<p>${error.message}</p>`;
   }
 }
 
@@ -139,28 +124,15 @@ if (followBtn) {
     : "follow";
 
     try {
-      const response = await fetch(
-        `https://v2.api.noroff.dev/social/profiles/${profileName}/${endpoint}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "X-Noroff-API-Key": apiKey
-          }
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        showAlert(data.errors?.[0]?.message || "Failed to update follow status", 'error');
-        return;
+      if (unfollow) {
+        await unfollowUser(profileName);
+      } else {
+        await followUser(profileName);
       }
 
-      //Refresh profile to get updated counts and button state
       fetchAndDisplayProfile(profileName);
     } catch (error) {
-      showAlert("Something went wrong", 'error');
+      showAlert(error.message, "error");
     }
   }
 }
@@ -209,33 +181,15 @@ if (followBtn) {
     }
 
     try {
-      const response = await fetch(
-        `https://v2.api.noroff.dev/social/profiles/${userName}?_followers=true&_following=true`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-            "X-Noroff-API-Key": apiKey
-          },
-          body: JSON.stringify(payload)
-        }
-      );
+      await updateProfile(userName, payload);
 
-      const data = await response.json();
+      showAlert("Profile updated successfully", "success");
 
-      if (!response.ok) {
-        showAlert(data.errors?.[0]?.message || "Failed to update profile", 'error');
-        return;
-      }
-
-      showAlert("Profile updated successfully", 'success');
-      
       setTimeout(() => {
-        location.reload();
+        window.location.hash = `#/profile/${userName}`;
       }, 1500);
     } catch (error) {
-      showAlert("Something went wrong", 'error');
+      showAlert(error.message, "error");
     }
   }
 
