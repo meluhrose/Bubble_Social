@@ -7,6 +7,7 @@ let currentPage = 1;
 let hasMorePages = true;
 let isLoadingPosts = false;
 let scrollObserver = null;
+let feedListenersAttached = false;
 
 import { getUserIdentity, isPostOwner } from "../main.js";
 import { handleEditPost, handleDeletePost } from "./post.js";
@@ -18,6 +19,7 @@ function resetFeedState() {
   currentPage = 1;
   hasMorePages = true;
   isLoadingPosts = false;
+  feedListenersAttached = false;
 
   if (scrollObserver) {
     scrollObserver.disconnect();
@@ -60,8 +62,18 @@ export function showFeed() {
   createPostForm.addEventListener("submit", handleCreatePost);
 
   const searchInput = document.getElementById("feedSearchInput");
+
   searchInput.addEventListener("input", (event) => {
     currentSearchTerm = event.target.value.trim().toLowerCase();
+
+    if (currentSearchTerm) {
+      if (scrollObserver) {
+        scrollObserver.disconnect();
+      }
+    } else {
+      setupInfiniteScroll();
+    }
+
     updateFeedDisplay();
   });
 }
@@ -72,7 +84,9 @@ function normalizeSearchValue(value) {
 
 function setupFeedEventListeners() {
   const feedDiv = document.getElementById("feed");
-  if (!feedDiv) return;
+  if (!feedDiv || feedListenersAttached) return;
+  
+  feedListenersAttached = true;
   
   // Use event delegation - attach one listener to the feed container
   feedDiv.addEventListener("click", (event) => {
@@ -140,30 +154,28 @@ function setupFeedEventListeners() {
   });
 }
 
-function setupInfiniteScroll() {
+function setUpInfiniteScroll() {
   const trigger = document.getElementById("feedLoadMoreTrigger");
-  if (!trigger) return;
+  if (!trigger || isEditingPost) return;
 
   if (scrollObserver) {
     scrollObserver.disconnect();
   }
 
-  scrollObserver = new IntersectionObserver(
-    (entries) => {
-      const isVisible = entries.some((entry) => entry.isIntersecting);
-      if (isVisible) {
-        loadMorePosts();
-      }
-    },
-    {
-      root: null,
-      rootMargin: "300px 0px",
-      threshold: 0.1
-    }
-  );
+  scrollObserver = new IntersectionObserver((entries) => {
+    const isVisible = entries.some((entry) => entry.isIntersecting);
 
-  scrollObserver.observe(trigger);
+    if (isVisible && !isEditingPost && !isLoadingPosts) {
+      loadMorePosts();
+    }
+  }, {
+    root: null,
+    rootMargin: " 300px 0px",
+    threshold: 0.1
+  });
 }
+scrollObserver.observe(trigger);
+
 
 function updateLoadingStatus(message) {
   const status = document.getElementById("feedLoadingStatus");
@@ -198,6 +210,16 @@ function renderPosts(posts, searchTerm = "") {
     return;
   }
 
+  // Store open edit form state before re-rendering
+  const openEditForm = feedDiv.querySelector('.edit-post-form[style*="display: flex"]');
+  const openFormPostId = openEditForm?.dataset.postId;
+  const openFormValues = openFormPostId ? {
+    title: openEditForm.querySelector('[name="title"]')?.value,
+    body: openEditForm.querySelector('[name="body"]')?.value,
+    imageUrl: openEditForm.querySelector('[name="imageUrl"]')?.value,
+    imageAlt: openEditForm.querySelector('[name="imageAlt"]')?.value
+  } : null;
+
   feedDiv.innerHTML = posts.map(post => {
     const canEdit = isPostOwner(post, currentUserIdentity);
 
@@ -223,15 +245,15 @@ function renderPosts(posts, searchTerm = "") {
 
     ${canEdit ? `
       <div class="post-actions">
-        <button class="edit-post-btn" data-post-id="${post.id}">Edit Post</button>
+        <button class="edit-post-btn" data-post-id="${post.id}">${openFormPostId === post.id ? "Cancel" : "Edit Post"}</button>
         <button class="delete-btn delete-post-btn" data-post-id="${post.id}">Delete Post</button>
       </div>
 
-      <form class="create-post-form edit-post-form" data-post-id="${post.id}" style="display: none; margin-top: 16px;">
-        <input type="text" name="title" placeholder="Post title" value="${post.title || ""}" required />
-        <textarea name="body" placeholder="What's on your mind?" required>${post.body || ""}</textarea>
-        <input type="url" name="imageUrl" placeholder="Image URL (optional)" value="${post.media?.url || ""}" />
-        <input type="text" name="imageAlt" placeholder="Image description (optional)" value="${post.media?.alt || ""}" />
+      <form class="create-post-form edit-post-form" data-post-id="${post.id}" style="display: ${openFormPostId === post.id ? "flex" : "none"}; margin-top: 16px;">
+        <input type="text" name="title" placeholder="Post title" value="${openFormPostId === post.id && openFormValues?.title ? openFormValues.title : (post.title || "")}" required />
+        <textarea name="body" placeholder="What's on your mind?" required>${openFormPostId === post.id && openFormValues?.body ? openFormValues.body : (post.body || "")}</textarea>
+        <input type="url" name="imageUrl" placeholder="Image URL (optional)" value="${openFormPostId === post.id && openFormValues?.imageUrl ? openFormValues.imageUrl : (post.media?.url || "")}" />
+        <input type="text" name="imageAlt" placeholder="Image description (optional)" value="${openFormPostId === post.id && openFormValues?.imageAlt ? openFormValues.imageAlt : (post.media?.alt || "")}" />
         <button type="submit">Save Changes</button>
       </form>
     ` : ""}
@@ -288,7 +310,7 @@ async function loadMorePosts() {
     if (!response.ok) {
       if (feedDiv) {
         feedDiv.innerHTML = `<p style="color: red;">Error fetching posts: ${data.errors?.[0]?.message || "Unknown error"}</p>`;
-      }
+      } 
       updateLoadingStatus("");
       return;
     }
