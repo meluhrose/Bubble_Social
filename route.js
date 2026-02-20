@@ -8,9 +8,13 @@ export function router() {
   const hash = window.location.hash || "#/login";
   const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
 
-  //Public routes that don't require authentication
+  // If user is logged in and tries to access login/register, redirect to feed
+  if (isLoggedIn && (hash.startsWith("#/login") || hash.startsWith("#/register"))) {
+    window.location.hash = "#/feed";
+    return;
+  }
 
-  
+  //Public routes that don't require authentication
   if (hash.startsWith("#/login")) {
     showLogin();
     return;
@@ -43,6 +47,6 @@ export function router() {
   } else if (hash.startsWith("#/profile")) {
     showProfile();
   } else {
-    window.location.hash = "#/login";
+    window.location.hash = "#/feed";
   }
 }
