@@ -66,9 +66,8 @@ export function showFeed() {
   updateNavbar();
 
   app.innerHTML = `
- <h1>Feed</h1>
 
-    <form id="createPostForm" class="create-post-form">
+  <form id="createPostForm" class="create-post-form">
     <input type="text" name="title" placeholder="Post title" required />
       <textarea name="body" placeholder="What's on your mind?" required></textarea>
       <input type="url" name="imageUrl" placeholder="Image URL (optional)" />

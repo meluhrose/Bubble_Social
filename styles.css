@@ -307,7 +307,7 @@ footer p {
 .create-post-form,
 .edit-post-form {
     max-width: 800px;
-    margin: 0 auto 16px;
+    margin: 20px auto;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -494,13 +494,26 @@ form.edit-profile-form textarea {
 /*Media Queries*/
 
 @media (max-width: 768px) {
+
+    nav {
+        width: 90%;
+    }
+
+    nav a {
+        font-size: 20px;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+
     .feed-container,
     .create-post-form,
     .edit-post-form,
     .profile-card,
     .posts-container,
     .post-container {
-        max-width: 100%;
+        max-width: 90%;
         padding: 20px;
     }
 
