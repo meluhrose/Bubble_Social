@@ -100,6 +100,7 @@ export function showFeed() {
   createPostForm.addEventListener("submit", handleCreatePost);
 
   const searchInput = document.getElementById("feedSearchInput");  const clearSearchBtn = document.getElementById("clearSearchBtn");
+  const pageIndicator = document.getElementById("feedLoadingStatus");
 
   searchInput.addEventListener("input", async (event) => {
     currentSearchTerm = event.target.value.trim().toLowerCase();
@@ -109,10 +110,13 @@ export function showFeed() {
       if (scrollObserver) {
         scrollObserver.disconnect();
       }
+      // Hide page indicator during search
+      if (pageIndicator) pageIndicator.style.display = "none";
       // Load all posts for searching
       await loadAllPostsForSearch();
     } else {
       // Re-enable infinite scroll when search is cleared
+      if (pageIndicator) pageIndicator.style.display = "block";
       resetFeedState();
       fetchAndDisplayPosts();
       setupInfiniteScroll();
@@ -123,6 +127,8 @@ export function showFeed() {
     searchInput.value = "";
     clearSearchBtn.style.display = "none";
     currentSearchTerm = "";
+    // Show page indicator when search is cleared
+    if (pageIndicator) pageIndicator.style.display = "block";
     resetFeedState();
     fetchAndDisplayPosts();
     setupInfiniteScroll();
@@ -180,12 +186,15 @@ function setupFeedEventListeners() {
       event.preventDefault();
       event.stopPropagation();
       const postId = target.dataset.postId;
-      const post = loadedPosts.find(p => p.id === postId);
-      const label = post?.title ? `"${post.title}"` : "this post";
+      const postSection = target.closest(".post-section");
+      const titleElement = postSection?.querySelector(".post-title");
+      const label = titleElement?.textContent ? `"${titleElement.textContent}"` : "this post";
       
       showConfirm(`Are you sure you want to delete ${label}?`).then(confirmed => {
         if (confirmed) {
           handleDeletePost(postId, target);
+        } else {
+          showAlert("Post deletion cancelled", 'info');
         }
       });
       return;

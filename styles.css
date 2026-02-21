@@ -146,8 +146,11 @@ footer p {
 /* Custom Alert/Message Styles */
 
 .custom-alert {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     max-width: 600px;
-    margin: 20px auto;
     padding: 16px 20px;
     border-radius: 50px;
     font-family: "Roboto Condensed", sans-serif;
@@ -155,21 +158,19 @@ footer p {
     font-weight: 500;
     text-align: center;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    animation: slideDown 0.3s ease-out;
-    position: relative;
-    z-index: 1000;
+    animation: float 4s infinite ease-in-out;
+    z-index: 9999;
 }
 
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
+@keyframes float {
+    0%, 100% {
+        transform: translate(-50%, -50%);
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    50% {
+        transform: translate(-50%, -55%);
     }
 }
+
 
 .custom-alert.success {
     background-color: #d4edda;
