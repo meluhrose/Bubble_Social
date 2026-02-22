@@ -16,9 +16,9 @@ import { fetchPostsPage, fetchPostsForSearch, createPost } from "../src/api.js";
 
 // Function to update navbar with links
 function updateNavbar() {
-  const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
-  const nav = document.querySelector("nav");
-  const navUl = document.querySelector("nav ul");
+  const navBar = document.getElementById("navbar");
+  const navUl = navBar?.querySelector("ul");
+  const isLoggedIn = !!localStorage.getItem("accessToken");
   
   if (navUl) {
     navUl.innerHTML = `
@@ -60,7 +60,7 @@ function resetFeedState() {
 
 export function showFeed() {
   const app = document.getElementById("app");
-  const nav = document.querySelector("nav");
+  const nav = document.getElementById("navbar");
   
   if (nav) nav.style.display = "block";
   updateNavbar();
